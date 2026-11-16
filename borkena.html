@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HABESHA AND PETROLEUM - Multi-Entry System</title>
+    <style>
+        :root {
+            --primary-color: #cc0000;
+            --secondary-color: #cc0000;
+            --accent-color: #2e7d32;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dcdcdc;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        .container { max-width: 1450px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header-banner { text-align: center; border: 2px solid var(--primary-color); border-radius: 6px; overflow: hidden; margin-bottom: 25px; }
+        .header-top { background-color: var(--primary-color); color: white; padding: 15px; font-size: 1.5rem; font-weight: bold; letter-spacing: 1px; }
+        
+        .selection-gate { max-width: 550px; margin: 40px auto; background: #eef2f7; padding: 35px; border-radius: 10px; border: 2px solid #003366; box-shadow: 0 6px 18px rgba(0,0,0,0.12); text-align: center; }
+        .selection-gate h2 { color: #003366; margin-top: 0; margin-bottom: 25px; font-size: 1.4rem; }
+        .gate-group { margin-bottom: 20px; text-align: left; }
+        .gate-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #222; font-size: 1rem; }
+        .gate-group select { width: 100%; padding: 12px; font-size: 1.05rem; border: 1px solid #b0bec5; border-radius: 6px; background-color: white; cursor: pointer; }
+        .active-context-bar { display: flex; justify-content: space-between; align-items: center; background: #e3f2fd; padding: 12px 20px; border-radius: 6px; border-left: 5px solid #003366; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .context-badges { display: flex; gap: 15px; font-size: 1.05rem; font-weight: bold; color: #003366; }
+        .context-badge { background: white; padding: 5px 12px; border-radius: 4px; border: 1px solid #90caf9; }
+        .form-section { background: #eef2f7; padding: 20px; border-radius: 6px; margin-bottom: 25px; border: 1px solid var(--border-color); }
+        .form-section h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #003366; padding-bottom: 8px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: #555; }
+        .form-group input { padding: 7px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; background-color: #fff; transition: border 0.2s; }
+        .form-group input.input-error { border: 2px solid #d32f2f; background-color: #ffebee; }
+        .error-msg { color: #d32f2f; font-size: 0.72rem; font-weight: bold; margin-top: 3px; display: none; }
+        
+        .temp-table-container { margin-top: 20px; background: white; padding: 15px; border-radius: 6px; border: 1px solid #b0bec5; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; font-size: 0.85rem; }
+        th, td { border: 1px solid #b0bec5; padding: 6px; text-align: center; }
+        th { background-color: #cfd8dc; color: #263238; }
+        
+        .approval-panel { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 6px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .approval-status { font-weight: bold; font-size: 0.95rem; color: #555; }
+        .badge-pending { color: #e65100; background: #ffe0b2; padding: 3px 8px; border-radius: 4px; }
+        .badge-approved { color: #2e7d32; background: #c8e6c9; padding: 3px 8px; border-radius: 4px; }
+
+        .btn-container { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+        button { padding: 10px 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s; }
+        .btn-primary { background-color: #003366; color: white; }
+        .btn-primary:disabled { background-color: #b0bec5; cursor: not-allowed; }
+        .btn-secondary { background-color: #546e7a; color: white; }
+        .btn-meku { background-color: #2e7d32; color: white; }
+        .btn-approval { background-color: #f57c00; color: white; }
+        .btn-add { background-color: #2e7d32; color: white; }
+        .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-banner">
+        <div class="header-top" id="companyHeaderTop">HABESHA AND PETROLEUM PRODUCT DIS.PLC</div>
+    </div>
+
+    <div id="selectionGate" class="selection-gate">
+        <h2>እባክዎ ድርጅት እና የትራንስፖርት አይነት ይምረጡ</h2>
+        <div class="gate-group">
+            <label for="gateCompany">1. Company (ድርጅት):</label>
+            <select id="gateCompany" onchange="handleCompanySelect()">
+                <option value="">-- ድርጅት ይምረጡ --</option>
+                <option value="Habesha">Habesha</option>
+                <option value="Petro">Petro</option>
+            </select>
+        </div>
+        <div class="gate-group" id="transportGateGroup" style="display: none;">
+            <label for="gateTransport">2. Transport Type:</label>
+            <select id="gateTransport" onchange="handleTransportSelect()">
+                <option value="">-- የትራንስፖርት አይነት ይምረጡ --</option>
+                <option value="Borkena">Borkena</option>
+                <option value="Dynamic">Dynamic</option>
+                <option value="Abat Tebabari">Abat Tebabari</option>
+                <option value="Borkena Tebabari">Borkena Tebabari</option>
+                <option value="Abat">Abat</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="mainWorkspace" style="display: none;">
+        <div class="active-context-bar">
+            <div class="context-badges">
+                <span class="context-badge">Company: <span id="displayCompany">Habesha</span></span>
+                <span class="context-badge">Transport: <span id="displayTransport">Borkena</span></span>
+            </div>
+            <button type="button" class="btn-secondary" onclick="resetSelection()">🔄 ድርጅት / ትራንስፖርት ቀይር</button>
+        </div>
+
+        <div class="form-section">
+            <h3>ብዙ መረጃዎችን በአንድ ላይ ማስገቢያ (Multi-Entry Queue)</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>FDC # (ቁጥር ብቻ)</label>
+                    <input type="text" id="fdc" placeholder="89799" oninput="validateNumbersOnly(this, 'fdcError')">
+                    <span id="fdcError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group"><label>Date</label><input type="date" id="date"></div>
+                <div class="form-group">
+                    <label>Plate (ቁጥር ብቻ)</label>
+                    <input type="text" id="plate" placeholder="1234" oninput="validateNumbersOnly(this, 'plateError')">
+                    <span id="plateError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Destin. (ፊደል ብቻ)</label>
+                    <input type="text" id="destin" placeholder="Moricha" oninput="validateLettersOnly(this, 'destinError')">
+                    <span id="destinError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Orig (ፊደል ብቻ)</label>
+                    <input type="text" id="orig" placeholder="Djibouti" oninput="validateLettersOnly(this, 'origError')">
+                    <span id="origError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Dealer (ፊደል ብቻ)</label>
+                    <input type="text" id="dealer" placeholder="Abera" oninput="validateLettersOnly(this, 'dealerError')">
+                    <span id="dealerError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Product (ፊደል ብቻ)</label>
+                    <input type="text" id="product" placeholder="AGO" oninput="validateLettersOnly(this, 'productError')">
+                    <span id="productError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Litter (ቁጥር ብቻ)</label>
+                    <input type="text" id="litter" placeholder="0.00" oninput="validateNumbersOnly(this, 'litterError'); calcAmt();">
+                    <span id="litterError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Rate (ቁጥር ብቻ)</label>
+                    <input type="text" id="rate" placeholder="0.00" oninput="validateNumbersOnly(this, 'rateError'); calcAmt();">
+                    <span id="rateError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group"><label>Trans. Amt</label><input type="text" id="transAmt" readonly style="background:#e9ecef;"></div>
+            </div>
+            <button type="button" class="btn-add" onclick="addEntryToQueue()">➕ ወደ ዝርዝር አክል (Add to Queue)</button>
+
+            <div class="temp-table-container">
+                <h4 style="margin:0 0 10px 0; color:#003366;">የተጨመሩ መረጃዎች ዝርዝር (Pending Queue: <span id="queueCount">0</span>)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.N</th><th>FDC #</th><th>Date</th><th>Plate</th><th>Destin.</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Trans. Amt</th><th>ድርጊት</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queueTableBody">
+                        <tr><td colspan="12">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="approval-panel">
+                <div class="approval-status">
+                    🔒 የፈቃድ ሁኔታ (Approval Status):<br>
+                    • 2ተኛው ኃላፊ (2nd Approver): <span id="app1Status" class="badge-pending">Pending ⏳</span><br>
+                    • 3ተኛው ኃላፊ (3rd Approver): <span id="app2Status" class="badge-pending">Pending ⏳</span>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" class="btn-approval" onclick="doFirstApproval()">✍️ 2nd Person Approve</button>
+                    <button type="button" class="btn-approval" onclick="doSecondApproval()">✍️ 3rd Person Approve</button>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button type="button" id="saveAllBtn" class="btn-primary" disabled onclick="saveAllToDatabase()">✅ ሁሉንም ወደ ዳታቤዝ መዝግብ / Save All</button>
+                <button type="button" class="btn-meku" onclick="openHabeshaDatabase()">📁 Habesha (Database)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentCompany = "";
+    let currentTransport = "";
+    let queueList = [];
+    let isApproved1 = false;
+    let isApproved2 = false;
+    document.getElementById('date').valueAsDate = new Date();
+
+    function validateNumbersOnly(input, errorId) {
+        let val = input.value;
+        let errorSpan = document.getElementById(errorId);
+
+        if (/[a-zA-Zግ-፼]/.test(val)) {
+            input.value = val.replace(/[a-zA-Zግ-፼]/g, '');
+            input.classList.add('input-error');
+            if (errorSpan) errorSpan.style.display = "block";
+        } else {
+            input.value = val.replace(/[^0-9.]/g, '');
+            input.classList.remove('input-error');
+            if (errorSpan) errorSpan.style.display = "none";
+        }
+    }
+
+    function validateLettersOnly(input, errorId) {
+        let val = input.value;
+        let errorSpan = document.getElementById(errorId);
+
+        if (/[0-9]/.test(val)) {
+            input.value = val.replace(/[0-9]/g, '');
+            input.classList.add('input-error');
+            if (errorSpan) errorSpan.style.display = "block";
+        } else {
+            input.classList.remove('input-error');
+            if (errorSpan) errorSpan.style.display = "none";
+        }
+    }
+
+    function handleCompanySelect() {
+        let comp = document.getElementById('gateCompany').value;
+        if (comp !== "") {
+            currentCompany = comp;
+            document.getElementById('transportGateGroup').style.display = "block";
+        } else {
+            document.getElementById('transportGateGroup').style.display = "none";
+        }
+    }
+
+    function handleTransportSelect() {
+        let trans = document.getElementById('gateTransport').value;
+        if (trans !== "" && currentCompany !== "") {
+            currentTransport = trans;
+            document.getElementById('displayCompany').innerText = currentCompany;
+            document.getElementById('displayTransport').innerText = currentTransport;
+            document.getElementById('selectionGate').style.display = "none";
+            document.getElementById('mainWorkspace').style.display = "block";
+            
+            let savedQueue = localStorage.getItem('borkena_queue_' + currentCompany + '_' + currentTransport);
+            if (savedQueue) {
+                try {
+                    queueList = JSON.parse(savedQueue);
+                } catch (e) {
+                    queueList = [];
+                }
+            }
+            renderQueue();
+        }
+    }
+
+    function resetSelection() {
+        document.getElementById('mainWorkspace').style.display = "none";
+        document.getElementById('selectionGate').style.display = "block";
+        queueList = [];
+        renderQueue();
+    }
+
+    function calcAmt() {
+        let lit = parseFloat(document.getElementById('litter').value) || 0;
+        let rate = parseFloat(document.getElementById('rate').value) || 0;
+        document.getElementById('transAmt').value = (lit * rate).toFixed(2);
+    }
+
+    async function addEntryToQueue() {
+        let fdc = document.getElementById('fdc').value.trim();
+        let plate = document.getElementById('plate').value.trim();
+        let litter = document.getElementById('litter').value.trim();
+        let rate = document.getElementById('rate').value.trim();
+
+        if (!fdc || !plate || !litter || !rate) {
+            alert("⚠️ እባክዎ FDC, Plate, Litter እና Rate መስኮቶችን በትክክል ይሙሉ!");
+            return;
+        }
+
+        let existsInQueue = queueList.some(item => item.fdc === fdc);
+        if (existsInQueue) {
+            alert("⚠️ ይህ FDC ቁጥር አስቀድሞ በዝርዝሩ (Queue) ውስጥ አለ!");
+            return;
+        }
+
+        try {
+            let res = await fetch('/api/check_fdc/' + fdc);
+            let data = await res.json();
+            if (data.exists) {
+                alert("❌ ይህ FDC ቁጥር ከዚህ በፊት በዳታቤዝ ውስጥ ተመዝግቧል! ድጋሚ መመዝገብ አይቻልም።");
+                return;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        let item = {
+            company: currentCompany,
+            transportType: currentTransport,
+            fdc: fdc,
+            date: document.getElementById('date').value,
+            plate: plate,
+            destin: document.getElementById('destin').value,
+            orig: document.getElementById('orig').value,
+            dealer: document.getElementById('dealer').value,
+            product: document.getElementById('product').value,
+            litter: parseFloat(litter) || 0,
+            rate: parseFloat(rate) || 0,
+            transAmt: parseFloat(document.getElementById('transAmt').value) || 0
+        };
+
+        queueList.push(item);
+        saveQueueToLocalStorage();
+        renderQueue();
+        
+        document.getElementById('fdc').value = '';
+        document.getElementById('plate').value = '';
+        document.getElementById('destin').value = '';
+        document.getElementById('orig').value = '';
+        document.getElementById('dealer').value = '';
+        document.getElementById('product').value = '';
+        document.getElementById('litter').value = '';
+        document.getElementById('rate').value = '';
+        document.getElementById('transAmt').value = '';
+    }
+
+    function removeQueueItem(index) {
+        queueList.splice(index, 1);
+        saveQueueToLocalStorage();
+        renderQueue();
+    }
+
+    function saveQueueToLocalStorage() {
+        if (currentCompany && currentTransport) {
+            localStorage.setItem('borkena_queue_' + currentCompany + '_' + currentTransport, JSON.stringify(queueList));
+        }
+    }
+
+    function renderQueue() {
+        let tbody = document.getElementById('queueTableBody');
+        document.getElementById('queueCount').innerText = queueList.length;
+        if (queueList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="12">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>';
+            return;
+        }
+        let html = "";
+        queueList.forEach((it, idx) => {
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td><b>${it.fdc}</b></td>
+                <td>${it.date}</td>
+                <td>${it.plate}</td>
+                <td>${it.destin}</td>
+                <td>${it.orig}</td>
+                <td>${it.dealer}</td>
+                <td>${it.product}</td>
+                <td>${it.litter}</td>
+                <td>${it.rate}</td>
+                <td><b>${it.transAmt}</b></td>
+                <td><button type="button" class="btn-delete" onclick="removeQueueItem(${idx})">ሰርዝ</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function doFirstApproval() {
+        if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
+        if (confirm("✍️ 2ተኛው ኃላፊ (2nd Approver) ማረጋገጫ ይሰጣል?")) {
+            isApproved1 = true;
+            updateApprovalUI();
+        }
+    }
+
+    function doSecondApproval() {
+        if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
+        if (!isApproved1) { alert("⚠️ መጀመሪያ 2ተኛው ኃላፊ ማረጋገጥ አለበት!"); return; }
+        if (confirm("✍️ 3ተኛው ኃላፊ (3rd Approver) ማረጋገጫ ይሰጣል?")) {
+            isApproved2 = true;
+            updateApprovalUI();
+        }
+    }
+
+    function updateApprovalUI() {
+        document.getElementById('app1Status').innerText = isApproved1 ? "Approved ✅" : "Pending ⏳";
+        document.getElementById('app1Status').className = isApproved1 ? "badge-approved" : "badge-pending";
+        document.getElementById('app2Status').innerText = isApproved2 ? "Approved ✅" : "Pending ⏳";
+        document.getElementById('app2Status').className = isApproved2 ? "badge-approved" : "badge-pending";
+
+        if (isApproved1 && isApproved2) {
+            document.getElementById('saveAllBtn').disabled = false;
+        } else {
+            document.getElementById('saveAllBtn').disabled = true;
+        }
+    }
+
+    async function saveAllToDatabase() {
+        try {
+            let res = await fetch('/api/save_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(queueList)
+            });
+            let result = await res.json();
+            if (res.ok && result.status === 'success') {
+                alert("✅ ሁሉም መረጃዎች በተሳካ ሁኔታ ወደ ዳታቤዝ ተመዝግበዋል!");
+                queueList = [];
+                saveQueueToLocalStorage();
+                renderQueue();
+                isApproved1 = false;
+                isApproved2 = false;
+                updateApprovalUI();
+            } else {
+                alert("❌ ስህተት: " + (result.message || "መመዝገብ አልተቻለም"));
+            }
+        } catch (e) {
+            alert("❌ ሰርቨር ማግኘት አልተቻለም።");
+        }
+    }
+
+    async function openHabeshaDatabase() {
+        let res = await fetch('/api/records');
+        let allRecords = await res.json();
+        
+        let filteredRecords = allRecords.filter(r => r.company === currentCompany && r.transportType === currentTransport);
+
+        let win = window.open("", "_blank");
+        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><table><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th></tr>`);
+        
+        if (filteredRecords.length === 0) {
+            win.document.write(`<tr><td colspan="13">ምንም የተመዘገበ መረጃ አልተገኘም (${currentCompany} - ${currentTransport})</td></tr>`);
+        } else {
+            filteredRecords.forEach(r => {
+                win.document.write(`<tr><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td>${r.fdc}</td><td>${r.date}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td></tr>`);
+            });
+        }
+        win.document.write(`</table></body></html>`);
+    }
+</script>
+</body>
+</html>
