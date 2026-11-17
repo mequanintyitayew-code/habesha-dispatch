@@ -185,6 +185,10 @@
     let isApproved2 = false;
     document.getElementById('date').valueAsDate = new Date();
 
+    // የይለፍ ቃሎች (Passwords / PINs)
+    const PASS_2ND = "2222";
+    const PASS_3RD = "3333";
+
     function validateNumbersOnly(input, errorId) {
         let val = input.value;
         let errorSpan = document.getElementById(errorId);
@@ -357,18 +361,32 @@
 
     function doFirstApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
-        if (confirm("✍️ 2ተኛው ኃላፊ (2nd Approver) ማረጋገጫ ይሰጣል?")) {
+        
+        let enteredPass = prompt("🔐 የ2ኛው ኃላፊ (2nd Approver) የይለፍ ቃል ያስገቡ:");
+        if (enteredPass === null) return; // Cancel ከተጫነ
+
+        if (enteredPass === PASS_2ND) {
             isApproved1 = true;
             updateApprovalUI();
+            alert("✅ 2ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
+        } else {
+            alert("❌ የተሳሳተ የይለፍ ቃል! እባክዎ ትክክለኛውን ኮድ ያስገቡ።");
         }
     }
 
     function doSecondApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         if (!isApproved1) { alert("⚠️ መጀመሪያ 2ተኛው ኃላፊ ማረጋገጥ አለበት!"); return; }
-        if (confirm("✍️ 3ተኛው ኃላፊ (3rd Approver) ማረጋገጫ ይሰጣል?")) {
+        
+        let enteredPass = prompt("🔐 የ3ኛው ኃላፊ (3rd Approver) የይለፍ ቃል ያስገቡ:");
+        if (enteredPass === null) return; // Cancel ከተጫነ
+
+        if (enteredPass === PASS_3RD) {
             isApproved2 = true;
             updateApprovalUI();
+            alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
+        } else {
+            alert("❌ የተሳሳተ የይለፍ ቃል! እባክዎ ትክክለኛውን ኮድ ያስገቡ።");
         }
     }
 
