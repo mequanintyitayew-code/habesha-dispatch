@@ -16,8 +16,10 @@
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
         .container { max-width: 1450px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .header-banner { text-align: center; border: 2px solid var(--primary-color); border-radius: 6px; overflow: hidden; margin-bottom: 25px; }
-        .header-top { background-color: var(--primary-color); color: white; padding: 15px; font-size: 1.5rem; font-weight: bold; letter-spacing: 1px; }
+        
+        /* Header Banner Style */
+        .header-banner { display: flex; align-items: center; background-color: var(--primary-color); border: 2px solid var(--primary-color); border-radius: 6px; overflow: hidden; margin-bottom: 25px; padding: 15px 25px; }
+        .header-top { color: white; font-size: 1.6rem; font-weight: bold; letter-spacing: 1.2px; flex-grow: 1; text-align: center; }
         
         .selection-gate { max-width: 550px; margin: 40px auto; background: #eef2f7; padding: 35px; border-radius: 10px; border: 2px solid #003366; box-shadow: 0 6px 18px rgba(0,0,0,0.12); text-align: center; }
         .selection-gate h2 { color: #003366; margin-top: 0; margin-bottom: 25px; font-size: 1.4rem; }
@@ -66,6 +68,7 @@
 </head>
 <body>
 <div class="container">
+    <!-- Header Banner -->
     <div class="header-banner">
         <div class="header-top" id="companyHeaderTop">HABESHA AND PETROLEUM PRODUCT DIS.PLC</div>
     </div>
@@ -341,11 +344,8 @@
         document.getElementById('transAmt').value = '';
     }
 
-    // ከ Queue ውስጥ መረጃን አውጥቶ ለማስተካከል (Edit) ወደ Form ማስገቢያ መመለሻ
     function editQueueItem(index) {
         let item = queueList[index];
-        
-        // መረጃዎቹን ወደ ላይኛው Form እንሞላቸዋለን
         document.getElementById('fdc').value = item.fdc;
         document.getElementById('date').value = item.date;
         document.getElementById('plate').value = item.plate;
@@ -357,7 +357,6 @@
         document.getElementById('rate').value = item.rate;
         document.getElementById('transAmt').value = item.transAmt;
 
-        // የድሮውን ከ Queue እናጠፋዋለን (አስተካክሎ እንደገና እንዲጨምር)
         queueList.splice(index, 1);
         saveQueueToLocalStorage();
         renderQueue();
@@ -556,16 +555,56 @@
         let filteredRecords = allRecords.filter(r => r.company === currentCompany && r.transportType === currentTransport);
 
         let win = window.open("", "_blank");
-        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><table><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th></tr>`);
+        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}input{padding:8px;width:300px;margin-bottom:15px;border:1px solid #ccc;border-radius:4px;font-size:1rem;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}.btn-del{background:#c62828;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><input type="text" id="dbSearch" placeholder="🔍 FDC, Plate ወይም Dealer ፈልግ..." onkeyup="filterDatabaseTable()"><table id="dbTable"><thead><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th><th>ድርጊት</th></tr></thead><tbody id="dbTableBody">`);
         
-        if (filteredRecords.length === 0) {
-            win.document.write(`<tr><td colspan="13">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`);
-        } else {
-            filteredRecords.forEach(r => {
-                win.document.write(`<tr><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td>${r.fdc}</td><td>${r.date}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td></tr>`);
-            });
+        function renderDbRows(records) {
+            let tbodyHtml = "";
+            if (records.length === 0) {
+                tbodyHtml = `<tr><td colspan="14">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`;
+            } else {
+                records.forEach(r => {
+                    tbodyHtml += `<tr id="row-${r.id}"><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td><b>${r.fdc}</b></td><td>${r.date}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td><td><button class="btn-del" onclick="deleteRecord(${r.id})">ሰርዝ</button></td></tr>`;
+                });
+            }
+            return tbodyHtml;
         }
-        win.document.write(`</table></body></html>`);
+
+        win.document.write(renderDbRows(filteredRecords));
+        win.document.write(`</tbody></table><script>
+            function filterDatabaseTable() { 
+                let query = document.getElementById('dbSearch').value.toLowerCase(); 
+                let rows = document.querySelectorAll('#dbTableBody tr'); 
+                rows.forEach(row => { 
+                    let text = row.innerText.toLowerCase(); 
+                    row.style.display = text.includes(query) ? '' : 'none'; 
+                }); 
+            }
+            async function deleteRecord(id) {
+                let enteredPass = prompt("🔐 መረጃውን ለመሰረዝ የይለፍ ቃል (Password) ያስገቡ:");
+                if (enteredPass === null) return;
+                
+                if (enteredPass !== "1231") {
+                    alert("❌ የተሳሳተ የይለፍ ቃል! መሰረዝ አይቻልም።");
+                    return;
+                }
+
+                if (confirm("⚠️ ይህንን መረጃ ከዳታቤዝ ላይ በእርግጥ መሰረዝ ይፈልጋሉ?")) {
+                    try {
+                        let res = await fetch('/api/delete_record/' + id, { method: 'DELETE' });
+                        let result = await res.json();
+                        if (res.ok && result.status === 'success') {
+                            alert("✅ መረጃው ተሰርዟል!");
+                            let row = document.getElementById('row-' + id);
+                            if (row) row.remove();
+                        } else {
+                            alert("❌ መሠረዝ አልተቻለም: " + (result.message || ""));
+                        }
+                    } catch (e) {
+                        alert("❌ ሰርቨር ማግኘት አልተቻለም።");
+                    }
+                }
+            }
+        <\/script></body></html>`);
     }
 </script>
 </body>
