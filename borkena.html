@@ -58,6 +58,7 @@
         .btn-approval { background-color: #f57c00; color: white; }
         .btn-comment { background-color: #d32f2f; color: white; }
         .btn-add { background-color: #2e7d32; color: white; }
+        .btn-edit { background-color: #0288d1; color: white; padding: 4px 8px; font-size: 0.8rem; margin-right: 4px; }
         .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.8rem; }
         .action-group-col { display: flex; flex-direction: column; gap: 8px; }
         .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -173,11 +174,11 @@
                 <div class="action-group-col">
                     <div class="action-row">
                         <button type="button" class="btn-approval" onclick="doFirstApproval()">✍️ 2nd Person Approve</button>
-                        <button type="button" class="btn-comment" onclick="doFirstComment()">💬 2nd Comment (ስህተት ካለ)</button>
+                        <button type="button" class="btn-comment" onclick="doFirstComment()">💬 2nd Comment</button>
                     </div>
                     <div class="action-row">
                         <button type="button" class="btn-approval" onclick="doSecondApproval()">✍️ 3rd Person Approve</button>
-                        <button type="button" class="btn-comment" onclick="doSecondComment()">💬 3rd Comment (ስህተት ካለ)</button>
+                        <button type="button" class="btn-comment" onclick="doSecondComment()">💬 3rd Comment</button>
                     </div>
                 </div>
             </div>
@@ -203,7 +204,6 @@
     let comment2Text = "";
     document.getElementById('date').valueAsDate = new Date();
 
-    // የይለፍ ቃሎች (Passwords / PINs)
     const PASS_2ND = "2222";
     const PASS_3RD = "3333";
 
@@ -326,7 +326,10 @@
         queueList.push(item);
         saveQueueToLocalStorage();
         renderQueue();
-        
+        clearFormInputs();
+    }
+
+    function clearFormInputs() {
         document.getElementById('fdc').value = '';
         document.getElementById('plate').value = '';
         document.getElementById('destin').value = '';
@@ -336,6 +339,29 @@
         document.getElementById('litter').value = '';
         document.getElementById('rate').value = '';
         document.getElementById('transAmt').value = '';
+    }
+
+    // ከ Queue ውስጥ መረጃን አውጥቶ ለማስተካከል (Edit) ወደ Form ማስገቢያ መመለሻ
+    function editQueueItem(index) {
+        let item = queueList[index];
+        
+        // መረጃዎቹን ወደ ላይኛው Form እንሞላቸዋለን
+        document.getElementById('fdc').value = item.fdc;
+        document.getElementById('date').value = item.date;
+        document.getElementById('plate').value = item.plate;
+        document.getElementById('destin').value = item.destin;
+        document.getElementById('orig').value = item.orig;
+        document.getElementById('dealer').value = item.dealer;
+        document.getElementById('product').value = item.product;
+        document.getElementById('litter').value = item.litter;
+        document.getElementById('rate').value = item.rate;
+        document.getElementById('transAmt').value = item.transAmt;
+
+        // የድሮውን ከ Queue እናጠፋዋለን (አስተካክሎ እንደገና እንዲጨምር)
+        queueList.splice(index, 1);
+        saveQueueToLocalStorage();
+        renderQueue();
+        alert("✏️ መረጃው ለማስተካከል ወደ ላይኛው ፎርም ተመልሷል፤ አስተካክለው 'ወደ ዝርዝር አክል' ይጫኑ።");
     }
 
     function removeQueueItem(index) {
@@ -371,81 +397,76 @@
                 <td>${it.litter}</td>
                 <td>${it.rate}</td>
                 <td><b>${it.transAmt}</b></td>
-                <td><button type="button" class="btn-delete" onclick="removeQueueItem(${idx})">ሰርዝ</button></td>
+                <td>
+                    <button type="button" class="btn-edit" onclick="editQueueItem(${idx})">አስተካክል</button>
+                    <button type="button" class="btn-delete" onclick="removeQueueItem(${idx})">ሰርዝ</button>
+                </td>
             </tr>`;
         });
         tbody.innerHTML = html;
     }
 
-    // 2ተኛው ኃላፊ ማጽደቂያ
     function doFirstApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
-        
         let enteredPass = prompt("🔐 የ2ኛው ኃላፊ (2nd Approver) የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
 
         if (enteredPass === PASS_2ND) {
             isApproved1 = true;
-            comment1Text = ""; // ከጸደቀ የቀድሞ አስተያየት ይጠፋል
+            comment1Text = "";
             updateApprovalUI();
             alert("✅ 2ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
         } else {
-            alert("❌ የተሳሳተ የይለፍ ቃል! እባክዎ ትክክለኛውን ኮድ ያስገቡ።");
+            alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
     }
 
-    // 2ተኛው ኃላፊ ስህተት ሲያይ Comment መስጫ
     function doFirstComment() {
-        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ በዝርዝሩ (Queue) ውስጥ የለም!"); return; }
-
-        let enteredPass = prompt("🔐 አስተያየት ለመስጠት የ2ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
+        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ የለም!"); return; }
+        let enteredPass = prompt("🔐 የ2ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
 
         if (enteredPass === PASS_2ND) {
-            let msg = prompt("💬 ምን ስህተት ተገኘ? (የሚስተካከለውን መረጃ ይጻፉ):");
+            let msg = prompt("💬 ምን ስህተት ተገኘ? (ለምሳሌ: Plate ቁጥር ተሳስቷል):");
             if (msg !== null && msg.trim() !== "") {
                 isApproved1 = false;
                 comment1Text = msg.trim();
                 updateApprovalUI();
-                alert("📢 አስተያየትዎ (Comment) በተሳካ ሁኔታ ተመዝግቧል!");
+                alert("📢 አስተያየትዎ ተመዝግቧል!");
             }
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
     }
 
-    // 3ተኛው ኃላፊ ማጽደቂያ
     function doSecondApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         if (!isApproved1) { alert("⚠️ መጀመሪያ 2ተኛው ኃላፊ ማረጋገጥ አለበት!"); return; }
-        
         let enteredPass = prompt("🔐 የ3ኛው ኃላፊ (3rd Approver) የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
 
         if (enteredPass === PASS_3RD) {
             isApproved2 = true;
-            comment2Text = ""; // ከጸደቀ የቀድሞ አስተያየት ይጠፋል
+            comment2Text = "";
             updateApprovalUI();
             alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
         } else {
-            alert("❌ የተሳሳተ የይለፍ ቃል! እባክዎ ትክክለኛውን ኮድ ያስገቡ።");
+            alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
     }
 
-    // 3ተኛው ኃላፊ ስህተት ሲያይ Comment መስጫ
     function doSecondComment() {
-        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ በዝርዝሩ (Queue) ውስጥ የለም!"); return; }
-
-        let enteredPass = prompt("🔐 አስተያየት ለመስጠት የ3ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
+        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ የለም!"); return; }
+        let enteredPass = prompt("🔐 የ3ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
 
         if (enteredPass === PASS_3RD) {
-            let msg = prompt("💬 ምን ስህተት ተገኘ? (የሚስተካከለውን መረጃ ይጻፉ):");
+            let msg = prompt("💬 ምን ስህተት ተገኘ? (ለምሳሌ: Plate ቁጥር ተሳስቷል):");
             if (msg !== null && msg.trim() !== "") {
                 isApproved2 = false;
                 comment2Text = msg.trim();
                 updateApprovalUI();
-                alert("📢 አስተያየትዎ (Comment) በተሳካ ሁኔታ ተመዝግቧል!");
+                alert("📢 አስተያየትዎ ተመዝግቧል!");
             }
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
@@ -453,7 +474,6 @@
     }
 
     function updateApprovalUI() {
-        // 2nd Approver Status
         if (isApproved1) {
             document.getElementById('app1Status').innerText = "Approved ✅";
             document.getElementById('app1Status').className = "badge-approved";
@@ -465,7 +485,6 @@
             document.getElementById('app1Status').className = "badge-pending";
         }
 
-        // 3rd Approver Status
         if (isApproved2) {
             document.getElementById('app2Status').innerText = "Approved ✅";
             document.getElementById('app2Status').className = "badge-approved";
@@ -477,7 +496,6 @@
             document.getElementById('app2Status').className = "badge-pending";
         }
 
-        // Comment Display Box
         let cBox = document.getElementById('commentDisplayBox');
         let commentsHtml = "";
         if (comment1Text !== "") {
@@ -494,7 +512,6 @@
             cBox.style.display = "none";
         }
 
-        // Enable Save All only if BOTH approved and NO comments
         if (isApproved1 && isApproved2 && comment1Text === "" && comment2Text === "") {
             document.getElementById('saveAllBtn').disabled = false;
         } else {
@@ -504,7 +521,7 @@
 
     async function saveAllToDatabase() {
         if (!isApproved1 || !isApproved2) {
-            alert("❌ ስህተት! 2ተኛው እና 3ተኛው ኃላፊ ማጽደቅ አለባቸው።");
+            alert("❌ ስህተት! ሁለቱም ኃላፊዎች ማጽደቅ አለባቸው።");
             return;
         }
 
@@ -536,14 +553,13 @@
     async function openHabeshaDatabase() {
         let res = await fetch('/api/records');
         let allRecords = await res.json();
-        
         let filteredRecords = allRecords.filter(r => r.company === currentCompany && r.transportType === currentTransport);
 
         let win = window.open("", "_blank");
         win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><table><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th></tr>`);
         
         if (filteredRecords.length === 0) {
-            win.document.write(`<tr><td colspan="13">ምንም የተመዘገበ መረጃ አልተገኘም (${currentCompany} - ${currentTransport})</td></tr>`);
+            win.document.write(`<tr><td colspan="13">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`);
         } else {
             filteredRecords.forEach(r => {
                 win.document.write(`<tr><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td>${r.fdc}</td><td>${r.date}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td></tr>`);
