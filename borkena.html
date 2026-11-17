@@ -42,19 +42,25 @@
         th { background-color: #cfd8dc; color: #263238; }
         
         .approval-panel { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 6px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .approval-status { font-weight: bold; font-size: 0.95rem; color: #555; }
+        .approval-status { font-weight: bold; font-size: 0.95rem; color: #555; line-height: 1.8; }
         .badge-pending { color: #e65100; background: #ffe0b2; padding: 3px 8px; border-radius: 4px; }
         .badge-approved { color: #2e7d32; background: #c8e6c9; padding: 3px 8px; border-radius: 4px; }
+        .badge-comment { color: #b71c1c; background: #ffcdd2; padding: 3px 8px; border-radius: 4px; }
+
+        .comment-box-display { margin-top: 12px; padding: 12px 15px; background-color: #ffebee; border-left: 5px solid #c62828; border-radius: 4px; color: #b71c1c; font-weight: bold; display: none; }
 
         .btn-container { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
-        button { padding: 10px 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s; }
+        button { padding: 10px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.88rem; transition: background-color 0.2s; }
         .btn-primary { background-color: #003366; color: white; }
         .btn-primary:disabled { background-color: #b0bec5; cursor: not-allowed; }
         .btn-secondary { background-color: #546e7a; color: white; }
         .btn-meku { background-color: #2e7d32; color: white; }
         .btn-approval { background-color: #f57c00; color: white; }
+        .btn-comment { background-color: #d32f2f; color: white; }
         .btn-add { background-color: #2e7d32; color: white; }
         .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.8rem; }
+        .action-group-col { display: flex; flex-direction: column; gap: 8px; }
+        .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
@@ -163,11 +169,21 @@
                     • 2ተኛው ኃላፊ (2nd Approver): <span id="app1Status" class="badge-pending">Pending ⏳</span><br>
                     • 3ተኛው ኃላፊ (3rd Approver): <span id="app2Status" class="badge-pending">Pending ⏳</span>
                 </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button type="button" class="btn-approval" onclick="doFirstApproval()">✍️ 2nd Person Approve</button>
-                    <button type="button" class="btn-approval" onclick="doSecondApproval()">✍️ 3rd Person Approve</button>
+                
+                <div class="action-group-col">
+                    <div class="action-row">
+                        <button type="button" class="btn-approval" onclick="doFirstApproval()">✍️ 2nd Person Approve</button>
+                        <button type="button" class="btn-comment" onclick="doFirstComment()">💬 2nd Comment (ስህተት ካለ)</button>
+                    </div>
+                    <div class="action-row">
+                        <button type="button" class="btn-approval" onclick="doSecondApproval()">✍️ 3rd Person Approve</button>
+                        <button type="button" class="btn-comment" onclick="doSecondComment()">💬 3rd Comment (ስህተት ካለ)</button>
+                    </div>
                 </div>
             </div>
+
+            <!-- የኃላፊዎች አስተያየት (Comment) ማሳያ ሳጥን -->
+            <div id="commentDisplayBox" class="comment-box-display"></div>
 
             <div class="btn-container">
                 <button type="button" id="saveAllBtn" class="btn-primary" disabled onclick="saveAllToDatabase()">✅ ሁሉንም ወደ ዳታቤዝ መዝግብ / Save All</button>
@@ -183,6 +199,8 @@
     let queueList = [];
     let isApproved1 = false;
     let isApproved2 = false;
+    let comment1Text = "";
+    let comment2Text = "";
     document.getElementById('date').valueAsDate = new Date();
 
     // የይለፍ ቃሎች (Passwords / PINs)
@@ -359,14 +377,16 @@
         tbody.innerHTML = html;
     }
 
+    // 2ተኛው ኃላፊ ማጽደቂያ
     function doFirstApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         
         let enteredPass = prompt("🔐 የ2ኛው ኃላፊ (2nd Approver) የይለፍ ቃል ያስገቡ:");
-        if (enteredPass === null) return; // Cancel ከተጫነ
+        if (enteredPass === null) return;
 
         if (enteredPass === PASS_2ND) {
             isApproved1 = true;
+            comment1Text = ""; // ከጸደቀ የቀድሞ አስተያየት ይጠፋል
             updateApprovalUI();
             alert("✅ 2ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
         } else {
@@ -374,15 +394,37 @@
         }
     }
 
+    // 2ተኛው ኃላፊ ስህተት ሲያይ Comment መስጫ
+    function doFirstComment() {
+        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ በዝርዝሩ (Queue) ውስጥ የለም!"); return; }
+
+        let enteredPass = prompt("🔐 አስተያየት ለመስጠት የ2ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
+        if (enteredPass === null) return;
+
+        if (enteredPass === PASS_2ND) {
+            let msg = prompt("💬 ምን ስህተት ተገኘ? (የሚስተካከለውን መረጃ ይጻፉ):");
+            if (msg !== null && msg.trim() !== "") {
+                isApproved1 = false;
+                comment1Text = msg.trim();
+                updateApprovalUI();
+                alert("📢 አስተያየትዎ (Comment) በተሳካ ሁኔታ ተመዝግቧል!");
+            }
+        } else {
+            alert("❌ የተሳሳተ የይለፍ ቃል!");
+        }
+    }
+
+    // 3ተኛው ኃላፊ ማጽደቂያ
     function doSecondApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         if (!isApproved1) { alert("⚠️ መጀመሪያ 2ተኛው ኃላፊ ማረጋገጥ አለበት!"); return; }
         
         let enteredPass = prompt("🔐 የ3ኛው ኃላፊ (3rd Approver) የይለፍ ቃል ያስገቡ:");
-        if (enteredPass === null) return; // Cancel ከተጫነ
+        if (enteredPass === null) return;
 
         if (enteredPass === PASS_3RD) {
             isApproved2 = true;
+            comment2Text = ""; // ከጸደቀ የቀድሞ አስተያየት ይጠፋል
             updateApprovalUI();
             alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
         } else {
@@ -390,13 +432,70 @@
         }
     }
 
-    function updateApprovalUI() {
-        document.getElementById('app1Status').innerText = isApproved1 ? "Approved ✅" : "Pending ⏳";
-        document.getElementById('app1Status').className = isApproved1 ? "badge-approved" : "badge-pending";
-        document.getElementById('app2Status').innerText = isApproved2 ? "Approved ✅" : "Pending ⏳";
-        document.getElementById('app2Status').className = isApproved2 ? "badge-approved" : "badge-pending";
+    // 3ተኛው ኃላፊ ስህተት ሲያይ Comment መስጫ
+    function doSecondComment() {
+        if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ በዝርዝሩ (Queue) ውስጥ የለም!"); return; }
 
-        if (isApproved1 && isApproved2) {
+        let enteredPass = prompt("🔐 አስተያየት ለመስጠት የ3ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
+        if (enteredPass === null) return;
+
+        if (enteredPass === PASS_3RD) {
+            let msg = prompt("💬 ምን ስህተት ተገኘ? (የሚስተካከለውን መረጃ ይጻፉ):");
+            if (msg !== null && msg.trim() !== "") {
+                isApproved2 = false;
+                comment2Text = msg.trim();
+                updateApprovalUI();
+                alert("📢 አስተያየትዎ (Comment) በተሳካ ሁኔታ ተመዝግቧል!");
+            }
+        } else {
+            alert("❌ የተሳሳተ የይለፍ ቃል!");
+        }
+    }
+
+    function updateApprovalUI() {
+        // 2nd Approver Status
+        if (isApproved1) {
+            document.getElementById('app1Status').innerText = "Approved ✅";
+            document.getElementById('app1Status').className = "badge-approved";
+        } else if (comment1Text !== "") {
+            document.getElementById('app1Status').innerText = "ስህተት አለው (Has Comment) ⚠️";
+            document.getElementById('app1Status').className = "badge-comment";
+        } else {
+            document.getElementById('app1Status').innerText = "Pending ⏳";
+            document.getElementById('app1Status').className = "badge-pending";
+        }
+
+        // 3rd Approver Status
+        if (isApproved2) {
+            document.getElementById('app2Status').innerText = "Approved ✅";
+            document.getElementById('app2Status').className = "badge-approved";
+        } else if (comment2Text !== "") {
+            document.getElementById('app2Status').innerText = "ስህተት አለው (Has Comment) ⚠️";
+            document.getElementById('app2Status').className = "badge-comment";
+        } else {
+            document.getElementById('app2Status').innerText = "Pending ⏳";
+            document.getElementById('app2Status').className = "badge-pending";
+        }
+
+        // Comment Display Box
+        let cBox = document.getElementById('commentDisplayBox');
+        let commentsHtml = "";
+        if (comment1Text !== "") {
+            commentsHtml += `<div>⚠️ <b>የ2ተኛው ኃላፊ አስተያየት (2nd Comment):</b> ${comment1Text}</div>`;
+        }
+        if (comment2Text !== "") {
+            commentsHtml += `<div style="margin-top:5px;">⚠️ <b>የ3ተኛው ኃላፊ አስተያየት (3rd Comment):</b> ${comment2Text}</div>`;
+        }
+
+        if (commentsHtml !== "") {
+            cBox.innerHTML = commentsHtml;
+            cBox.style.display = "block";
+        } else {
+            cBox.style.display = "none";
+        }
+
+        // Enable Save All only if BOTH approved and NO comments
+        if (isApproved1 && isApproved2 && comment1Text === "" && comment2Text === "") {
             document.getElementById('saveAllBtn').disabled = false;
         } else {
             document.getElementById('saveAllBtn').disabled = true;
@@ -404,6 +503,11 @@
     }
 
     async function saveAllToDatabase() {
+        if (!isApproved1 || !isApproved2) {
+            alert("❌ ስህተት! 2ተኛው እና 3ተኛው ኃላፊ ማጽደቅ አለባቸው።");
+            return;
+        }
+
         try {
             let res = await fetch('/api/save_batch', {
                 method: 'POST',
@@ -418,6 +522,8 @@
                 renderQueue();
                 isApproved1 = false;
                 isApproved2 = false;
+                comment1Text = "";
+                comment2Text = "";
                 updateApprovalUI();
             } else {
                 alert("❌ ስህተት: " + (result.message || "መመዝገብ አልተቻለም"));
