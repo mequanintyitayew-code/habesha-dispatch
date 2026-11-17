@@ -80,6 +80,19 @@ def save_batch():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
+# 👉 አዲሱ የዴሊት (Delete) ራውት እዚህ ተጨምሯል
+@app.route('/api/delete_record/<int:record_id>', methods=['DELETE'])
+def delete_record(record_id):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM dispatch WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get("PORT", 8080))
