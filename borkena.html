@@ -57,6 +57,7 @@
         .btn-primary:disabled { background-color: #b0bec5; cursor: not-allowed; }
         .btn-secondary { background-color: #546e7a; color: white; }
         .btn-meku { background-color: #2e7d32; color: white; }
+        .btn-excel { background-color: #1b5e20; color: white; }
         .btn-approval { background-color: #f57c00; color: white; }
         .btn-comment { background-color: #d32f2f; color: white; }
         .btn-add { background-color: #2e7d32; color: white; }
@@ -191,6 +192,7 @@
 
             <div class="btn-container">
                 <button type="button" id="saveAllBtn" class="btn-primary" disabled onclick="saveAllToDatabase()">✅ ሁሉንም ወደ ዳታቤዝ መዝግብ / Save All</button>
+                <button type="button" class="btn-excel" onclick="exportToExcel(true)">📥 ወደ Excel አውርድ (Export Excel)</button>
                 <button type="button" class="btn-meku" onclick="openHabeshaDatabase()">📁 Habesha (Database)</button>
             </div>
         </div>
@@ -448,7 +450,8 @@
             isApproved2 = true;
             comment2Text = "";
             updateApprovalUI();
-            alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
+            alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል! ወደ Excel በራስ-ሰር በመውረድ ላይ ነው...");
+            exportToExcel(false);
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
@@ -470,6 +473,65 @@
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
+    }
+
+    function exportToExcel(isManual = false) {
+        if (queueList.length === 0) {
+            if (isManual) alert("⚠️ ለማውረድ የሚሆን መረጃ በዝርዝሩ (Queue) ውስጥ የለም!");
+            return;
+        }
+
+        const headers = [
+            "S.N", "Company", "Transport Type", "FDC #", "Date", "Plate",
+            "Destin.", "Orig", "Dealer", "Product", "Litter", "Rate",
+            "Trans. Amt", "2nd Approver", "3rd Approver", "Comments"
+        ];
+
+        const status2nd = isApproved1 ? "Approved" : (comment1Text ? "Has Comment" : "Pending");
+        const status3rd = isApproved2 ? "Approved" : (comment2Text ? "Has Comment" : "Pending");
+        const combinedComments = [comment1Text && `2nd: ${comment1Text}`, comment2Text && `3rd: ${comment2Text}`]
+            .filter(Boolean).join(" | ");
+
+        const rows = [headers.map(h => `"${h}"`).join(",")];
+
+        queueList.forEach((it, idx) => {
+            const line = [
+                idx + 1,
+                it.company || currentCompany,
+                it.transportType || currentTransport,
+                it.fdc,
+                it.date,
+                it.plate,
+                it.destin,
+                it.orig,
+                it.dealer,
+                it.product,
+                it.litter,
+                it.rate,
+                it.transAmt,
+                status2nd,
+                status3rd,
+                combinedComments
+            ];
+            rows.push(line.map(val => `"${String(val ?? "").replace(/"/g, '""')}"`).join(","));
+        });
+
+        const csvWithBom = "\uFEFF" + rows.join("\r\n");
+        const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const safeComp = (currentCompany || "Dispatch").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeTrans = (currentTransport || "List").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const fileName = `${safeComp}_${safeTrans}_Approved_${todayStr}.csv`;
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     function updateApprovalUI() {
