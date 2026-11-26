@@ -123,8 +123,8 @@
                     <span id="fdcError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
-                    <label>Date</label>
-                    <input type="date" id="date">
+                    <label>Date (e.g. 10/9/2026)</label>
+                    <input type="text" id="date" placeholder="10/9/2026" onblur="formatDateInputField(this)">
                 </div>
                 <div class="form-group">
                     <label>Plate</label>
@@ -267,6 +267,71 @@
 </div>
 
 <script>
+    const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    function parseInputDateParts(rawVal) {
+        if (!rawVal) return null;
+        const s = String(rawVal).trim();
+        if (!s) return null;
+
+        // ቀድሞ በ 9-Oct-26 ወይም 09-Oct-2026 ቅርጽ ከሆነ
+        const namedMatch = s.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{2,4})$/);
+        if (namedMatch) {
+            const day = parseInt(namedMatch[1], 10);
+            const monIdx = MONTH_SHORT.findIndex(m => m.toLowerCase() === namedMatch[2].toLowerCase());
+            let yr = parseInt(namedMatch[3], 10);
+            if (yr < 100) yr += 2000;
+            if (monIdx >= 0 && day >= 1 && day <= 31) {
+                return { day, monthIndex: monIdx, year: yr };
+            }
+        }
+
+        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ
+        const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        if (isoMatch) {
+            const year = parseInt(isoMatch[1], 10);
+            const monthIndex = parseInt(isoMatch[2], 10) - 1;
+            const day = parseInt(isoMatch[3], 10);
+            if (monthIndex >= 0 && monthIndex <= 11 && day >= 1 && day <= 31) {
+                return { day, monthIndex, year };
+            }
+        }
+
+        // 10/9/2026 ወይም 10-9-26 (Day/Month/Year) ቅርጽ ከሆነ
+        const dmyMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+        if (dmyMatch) {
+            const day = parseInt(dmyMatch[1], 10);
+            const monthIndex = parseInt(dmyMatch[2], 10) - 1;
+            let year = parseInt(dmyMatch[3], 10);
+            if (year < 100) year += 2000;
+            if (monthIndex >= 0 && monthIndex <= 11 && day >= 1 && day <= 31) {
+                return { day, monthIndex, year };
+            }
+        }
+
+        return null;
+    }
+
+    function formatToShortDate(rawVal) {
+        const parts = parseInputDateParts(rawVal);
+        if (!parts) return String(rawVal || "").trim();
+        const yy = String(parts.year).slice(-2);
+        return `${parts.day}-${MONTH_SHORT[parts.monthIndex]}-${yy}`;
+    }
+
+    function formatDateInputField(inputEl) {
+        const formatted = formatToShortDate(inputEl.value);
+        if (formatted) {
+            inputEl.value = formatted;
+        }
+    }
+
+    function setTodayDateField() {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        document.getElementById('date').value = `${now.getDate()}-${MONTH_SHORT[now.getMonth()]}-${yy}`;
+    }
+
     let currentCompany = "";
     let currentTransport = "";
     let queueList = [];
@@ -274,7 +339,7 @@
     let isApproved2 = false;
     let comment1Text = "";
     let comment2Text = "";
-    document.getElementById('date').valueAsDate = new Date();
+    setTodayDateField();
 
     const PASS_2ND = "2222";
     const PASS_3RD = "3333";
@@ -371,6 +436,8 @@
         let fdc = document.getElementById('fdc').value.trim();
         let plate = document.getElementById('plate').value.trim();
         let litter = document.getElementById('litter').value.trim();
+        let formattedDate = formatToShortDate(document.getElementById('date').value);
+        document.getElementById('date').value = formattedDate;
 
         if (!fdc || !plate || !litter) {
             alert("⚠️ እባክዎ ቢያንስ FDC #, Plate እና Litter መስኮቶችን በትክክል ይሙሉ!");
@@ -408,7 +475,7 @@
             company: currentCompany,
             transportType: currentTransport,
             fdc: fdc,
-            date: document.getElementById('date').value,
+            date: formattedDate,
             plate: plate,
             destin: document.getElementById('destin').value,
             orig: document.getElementById('orig').value,
@@ -455,7 +522,7 @@
     function editQueueItem(index) {
         let item = queueList[index];
         document.getElementById('fdc').value = item.fdc || '';
-        document.getElementById('date').value = item.date || '';
+        document.getElementById('date').value = formatToShortDate(item.date || '');
         document.getElementById('plate').value = item.plate || '';
         document.getElementById('destin').value = item.destin || '';
         document.getElementById('orig').value = item.orig || '';
@@ -512,6 +579,7 @@
             const tAmt = parseFloat(it.transAmt) || 0;
             const bAmt = parseFloat(it.birr) || 0;
             const nPay = (it.netPayment !== undefined) ? (parseFloat(it.netPayment) || 0) : (tAmt - bAmt);
+            const displayDate = formatToShortDate(it.date);
 
             sumTransAmt += tAmt;
             sumBirr += bAmt;
@@ -520,7 +588,7 @@
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><b>${it.fdc}</b></td>
-                <td>${it.date}</td>
+                <td>${displayDate}</td>
                 <td>${it.plate}</td>
                 <td>${it.destin}</td>
                 <td>${it.orig}</td>
@@ -655,6 +723,7 @@
             const amt = parseFloat(it.transAmt) || 0;
             const birr = parseFloat(it.birr) || 0;
             const netPay = (it.netPayment !== undefined) ? (parseFloat(it.netPayment) || 0) : (amt - birr);
+            const shortDateStr = formatToShortDate(it.date);
 
             totalTransAmt += amt;
             totalBirr += birr;
@@ -663,7 +732,7 @@
             aoa.push([
                 idx + 1,
                 Number(it.fdc) || it.fdc || "",
-                it.date || "",
+                shortDateStr,
                 it.plate || "",
                 it.destin || "",
                 it.orig || "",
@@ -710,6 +779,16 @@
         ]);
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // የ Date አምድ (Column C -> index 2, ከረድፍ 5 ጀምሮ) format እንዲጠብቅ
+        const dataStartRow = 4; // 0-indexed row 4 = Excel row 5
+        for (let i = 0; i < queueList.length; i++) {
+            const cellRef = XLSX.utils.encode_cell({ r: dataStartRow + i, c: 2 });
+            if (ws[cellRef]) {
+                ws[cellRef].t = "s";
+                ws[cellRef].z = "d-mmm-yy";
+            }
+        }
 
         ws["!cols"] = [
             { wch: 6 },  // S.N
@@ -835,7 +914,7 @@
                 tbodyHtml = `<tr><td colspan="14">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`;
             } else {
                 records.forEach(r => {
-                    tbodyHtml += `<tr id="row-${r.id}"><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td><b>${r.fdc}</b></td><td>${r.date}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td><td><button class="btn-del" onclick="deleteRecord(${r.id})">ሰርዝ</button></td></tr>`;
+                    tbodyHtml += `<tr id="row-${r.id}"><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td><b>${r.fdc}</b></td><td>${formatToShortDate(r.date)}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td><td><button class="btn-del" onclick="deleteRecord(${r.id})">ሰርዝ</button></td></tr>`;
                 });
             }
             return tbodyHtml;
