@@ -17,7 +17,7 @@
             --border-color: #dcdcdc;
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
-        .container { max-width: 1450px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 1550px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         /* Header Banner Style */
         .header-banner { display: flex; align-items: center; background-color: var(--primary-color); border: 2px solid var(--primary-color); border-radius: 6px; overflow: hidden; margin-bottom: 25px; padding: 15px 25px; }
@@ -33,17 +33,22 @@
         .context-badge { background: white; padding: 5px 12px; border-radius: 4px; border: 1px solid #90caf9; }
         .form-section { background: #eef2f7; padding: 20px; border-radius: 6px; margin-bottom: 25px; border: 1px solid var(--border-color); }
         .form-section h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #003366; padding-bottom: 8px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: #555; }
-        .form-group input { padding: 7px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; background-color: #fff; transition: border 0.2s; }
+        .form-group label { font-size: 0.78rem; font-weight: bold; margin-bottom: 4px; color: #333; }
+        .form-group input { padding: 7px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.88rem; background-color: #fff; transition: border 0.2s; }
         .form-group input.input-error { border: 2px solid #d32f2f; background-color: #ffebee; }
-        .error-msg { color: #d32f2f; font-size: 0.72rem; font-weight: bold; margin-top: 3px; display: none; }
+        .form-group input.highlight-yellow { background-color: #fffde7; font-weight: bold; border-color: #fbc02d; }
+        .form-group input.highlight-green { background-color: #e8f5e9; font-weight: bold; border-color: #66bb6a; }
+        .error-msg { color: #d32f2f; font-size: 0.7rem; font-weight: bold; margin-top: 3px; display: none; }
         
-        .temp-table-container { margin-top: 20px; background: white; padding: 15px; border-radius: 6px; border: 1px solid #b0bec5; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; font-size: 0.85rem; }
-        th, td { border: 1px solid #b0bec5; padding: 6px; text-align: center; }
+        .temp-table-container { margin-top: 20px; background: white; padding: 15px; border-radius: 6px; border: 1px solid #b0bec5; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; font-size: 0.8rem; white-space: nowrap; }
+        th, td { border: 1px solid #b0bec5; padding: 6px 8px; text-align: center; }
         th { background-color: #cfd8dc; color: #263238; }
+        td.cell-yellow { background-color: #ffff00; font-weight: bold; }
+        td.cell-rate { color: #d32f2f; font-weight: bold; }
+        tr.total-row td { background-color: #eceff1; font-weight: bold; border-top: 2px solid #37474f; }
         
         .approval-panel { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 6px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .approval-status { font-weight: bold; font-size: 0.95rem; color: #555; line-height: 1.8; }
@@ -64,8 +69,8 @@
         .btn-approval { background-color: #f57c00; color: white; }
         .btn-comment { background-color: #d32f2f; color: white; }
         .btn-add { background-color: #2e7d32; color: white; }
-        .btn-edit { background-color: #0288d1; color: white; padding: 4px 8px; font-size: 0.8rem; margin-right: 4px; }
-        .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.8rem; }
+        .btn-edit { background-color: #0288d1; color: white; padding: 4px 8px; font-size: 0.78rem; margin-right: 4px; }
+        .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.78rem; }
         .action-group-col { display: flex; flex-direction: column; gap: 8px; }
         .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
     </style>
@@ -114,18 +119,20 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>FDC # (ቁጥር ብቻ)</label>
-                    <input type="text" id="fdc" placeholder="89799" oninput="validateNumbersOnly(this, 'fdcError')">
+                    <input type="text" id="fdc" placeholder="95324" oninput="validateNumbersOnly(this, 'fdcError')">
                     <span id="fdcError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
-                <div class="form-group"><label>Date</label><input type="date" id="date"></div>
                 <div class="form-group">
-                    <label>Plate (ቁጥር ብቻ)</label>
-                    <input type="text" id="plate" placeholder="1234" oninput="validateNumbersOnly(this, 'plateError')">
-                    <span id="plateError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                    <label>Date</label>
+                    <input type="date" id="date">
+                </div>
+                <div class="form-group">
+                    <label>Plate</label>
+                    <input type="text" id="plate" placeholder="73731/21810">
                 </div>
                 <div class="form-group">
                     <label>Destin. (ፊደል ብቻ)</label>
-                    <input type="text" id="destin" placeholder="Moricha" oninput="validateLettersOnly(this, 'destinError')">
+                    <input type="text" id="destin" placeholder="Hawassa" oninput="validateLettersOnly(this, 'destinError')">
                     <span id="destinError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -135,7 +142,7 @@
                 </div>
                 <div class="form-group">
                     <label>Dealer (ፊደል ብቻ)</label>
-                    <input type="text" id="dealer" placeholder="Abera" oninput="validateLettersOnly(this, 'dealerError')">
+                    <input type="text" id="dealer" placeholder="Netsanet" oninput="validateLettersOnly(this, 'dealerError')">
                     <span id="dealerError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -144,17 +151,54 @@
                     <span id="productError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
-                    <label>Litter (ቁጥር ብቻ)</label>
-                    <input type="text" id="litter" placeholder="0.00" oninput="validateNumbersOnly(this, 'litterError'); calcAmt();">
+                    <label>Litter</label>
+                    <input type="text" id="litter" placeholder="46012" oninput="validateNumbersOnly(this, 'litterError'); calcAmt();">
                     <span id="litterError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
-                    <label>Rate (ቁጥር ብቻ)</label>
-                    <input type="text" id="rate" placeholder="0.00" oninput="validateNumbersOnly(this, 'rateError'); calcAmt();">
-                    <span id="rateError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                    <label>K/M(paved)</label>
+                    <input type="text" id="kmPaved" placeholder="1053" oninput="validateNumbersOnly(this, 'kmPavedError'); calcAmt();">
+                    <span id="kmPavedError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
-                <div class="form-group"><label>Trans. Amt</label><input type="text" id="transAmt" readonly style="background:#e9ecef;"></div>
+                <div class="form-group">
+                    <label>Rate(B)</label>
+                    <input type="text" id="rateB" placeholder="0.91768" oninput="validateNumbersOnly(this, 'rateBError'); calcAmt();">
+                    <span id="rateBError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>K/M©(gravel)</label>
+                    <input type="text" id="kmGravel" placeholder="0" oninput="validateNumbersOnly(this, 'kmGravelError'); calcAmt();">
+                    <span id="kmGravelError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Rate(D)</label>
+                    <input type="text" id="rateD" placeholder="1.04134" oninput="validateNumbersOnly(this, 'rateDError'); calcAmt();">
+                    <span id="rateDError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Trans. Amt (Auto)</label>
+                    <input type="text" id="transAmt" readonly class="highlight-yellow">
+                </div>
+                <div class="form-group">
+                    <label>L/Lit</label>
+                    <input type="text" id="lLit" placeholder="0.00" oninput="validateNumbersOnly(this, 'lLitError'); calcAmt();">
+                    <span id="lLitError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Rate (Deduction)</label>
+                    <input type="text" id="dedRate" placeholder="0.00" oninput="validateNumbersOnly(this, 'dedRateError'); calcAmt();">
+                    <span id="dedRateError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
+                </div>
+                <div class="form-group">
+                    <label>Birr (Auto)</label>
+                    <input type="text" id="birr" readonly style="background:#e9ecef;">
+                </div>
+                <div class="form-group">
+                    <label>Net Payment (Auto)</label>
+                    <input type="text" id="netPayment" readonly class="highlight-green">
+                </div>
             </div>
+
             <div class="entry-action-row">
                 <button type="button" class="btn-add" onclick="addEntryToQueue()">➕ ወደ ዝርዝር አክል (Add to Queue)</button>
                 <button type="button" class="btn-excel" onclick="exportToExcel(true)">📁 ወደ Excel አውርድ (Export Excel)</button>
@@ -165,11 +209,29 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>S.N</th><th>FDC #</th><th>Date</th><th>Plate</th><th>Destin.</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Trans. Amt</th><th>ድርጊት</th>
+                            <th>S.N</th>
+                            <th>FDC #</th>
+                            <th>Date</th>
+                            <th>Plate</th>
+                            <th>Destin.</th>
+                            <th>Orig</th>
+                            <th>Dealer</th>
+                            <th>Product</th>
+                            <th>Litter</th>
+                            <th>K/M(paved)</th>
+                            <th>Rate(B)</th>
+                            <th>K/M©(gravel)</th>
+                            <th>Rate(D)</th>
+                            <th>Trans. Amt</th>
+                            <th>L/Lit</th>
+                            <th>Rate</th>
+                            <th>Birr</th>
+                            <th>Net Payment</th>
+                            <th>ድርጊት</th>
                         </tr>
                     </thead>
                     <tbody id="queueTableBody">
-                        <tr><td colspan="12">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>
+                        <tr><td colspan="19">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -286,18 +348,32 @@
 
     function calcAmt() {
         let lit = parseFloat(document.getElementById('litter').value) || 0;
-        let rate = parseFloat(document.getElementById('rate').value) || 0;
-        document.getElementById('transAmt').value = (lit * rate).toFixed(2);
+        let kmPaved = parseFloat(document.getElementById('kmPaved').value) || 0;
+        let rateB = parseFloat(document.getElementById('rateB').value) || 0;
+        let kmGravel = parseFloat(document.getElementById('kmGravel').value) || 0;
+        let rateD = parseFloat(document.getElementById('rateD').value) || 0;
+
+        let pavedAmt = lit * kmPaved * rateB;
+        let gravelAmt = lit * kmGravel * rateD;
+        let transAmt = pavedAmt + gravelAmt;
+
+        let lLit = parseFloat(document.getElementById('lLit').value) || 0;
+        let dedRate = parseFloat(document.getElementById('dedRate').value) || 0;
+        let birr = lLit * dedRate;
+        let netPayment = transAmt - birr;
+
+        document.getElementById('transAmt').value = transAmt.toFixed(2);
+        document.getElementById('birr').value = birr.toFixed(2);
+        document.getElementById('netPayment').value = netPayment.toFixed(2);
     }
 
     async function addEntryToQueue() {
         let fdc = document.getElementById('fdc').value.trim();
         let plate = document.getElementById('plate').value.trim();
         let litter = document.getElementById('litter').value.trim();
-        let rate = document.getElementById('rate').value.trim();
 
-        if (!fdc || !plate || !litter || !rate) {
-            alert("⚠️ እባክዎ FDC, Plate, Litter እና Rate መስኮቶችን በትክክል ይሙሉ!");
+        if (!fdc || !plate || !litter) {
+            alert("⚠️ እባክዎ ቢያንስ FDC #, Plate እና Litter መስኮቶችን በትክክል ይሙሉ!");
             return;
         }
 
@@ -318,6 +394,16 @@
             console.error(e);
         }
 
+        let kmPavedVal = parseFloat(document.getElementById('kmPaved').value) || 0;
+        let rateBVal = parseFloat(document.getElementById('rateB').value) || 0;
+        let kmGravelVal = parseFloat(document.getElementById('kmGravel').value) || 0;
+        let rateDVal = parseFloat(document.getElementById('rateD').value) || 0;
+        let lLitVal = parseFloat(document.getElementById('lLit').value) || 0;
+        let dedRateVal = parseFloat(document.getElementById('dedRate').value) || 0;
+        let birrVal = parseFloat(document.getElementById('birr').value) || 0;
+        let transAmtVal = parseFloat(document.getElementById('transAmt').value) || 0;
+        let netPaymentVal = parseFloat(document.getElementById('netPayment').value) || 0;
+
         let item = {
             company: currentCompany,
             transportType: currentTransport,
@@ -329,8 +415,16 @@
             dealer: document.getElementById('dealer').value,
             product: document.getElementById('product').value,
             litter: parseFloat(litter) || 0,
-            rate: parseFloat(rate) || 0,
-            transAmt: parseFloat(document.getElementById('transAmt').value) || 0
+            kmPaved: kmPavedVal,
+            rateB: rateBVal,
+            kmGravel: kmGravelVal,
+            rateD: rateDVal,
+            rate: rateBVal || rateDVal || 0,
+            transAmt: transAmtVal,
+            lLit: lLitVal,
+            dedRate: dedRateVal,
+            birr: birrVal,
+            netPayment: netPaymentVal
         };
 
         queueList.push(item);
@@ -347,22 +441,36 @@
         document.getElementById('dealer').value = '';
         document.getElementById('product').value = '';
         document.getElementById('litter').value = '';
-        document.getElementById('rate').value = '';
+        document.getElementById('kmPaved').value = '';
+        document.getElementById('rateB').value = '';
+        document.getElementById('kmGravel').value = '';
+        document.getElementById('rateD').value = '';
         document.getElementById('transAmt').value = '';
+        document.getElementById('lLit').value = '';
+        document.getElementById('dedRate').value = '';
+        document.getElementById('birr').value = '';
+        document.getElementById('netPayment').value = '';
     }
 
     function editQueueItem(index) {
         let item = queueList[index];
-        document.getElementById('fdc').value = item.fdc;
-        document.getElementById('date').value = item.date;
-        document.getElementById('plate').value = item.plate;
-        document.getElementById('destin').value = item.destin;
-        document.getElementById('orig').value = item.orig;
-        document.getElementById('dealer').value = item.dealer;
-        document.getElementById('product').value = item.product;
-        document.getElementById('litter').value = item.litter;
-        document.getElementById('rate').value = item.rate;
-        document.getElementById('transAmt').value = item.transAmt;
+        document.getElementById('fdc').value = item.fdc || '';
+        document.getElementById('date').value = item.date || '';
+        document.getElementById('plate').value = item.plate || '';
+        document.getElementById('destin').value = item.destin || '';
+        document.getElementById('orig').value = item.orig || '';
+        document.getElementById('dealer').value = item.dealer || '';
+        document.getElementById('product').value = item.product || '';
+        document.getElementById('litter').value = item.litter || '';
+        document.getElementById('kmPaved').value = item.kmPaved || '';
+        document.getElementById('rateB').value = item.rateB || '';
+        document.getElementById('kmGravel').value = item.kmGravel || '';
+        document.getElementById('rateD').value = item.rateD || '';
+        document.getElementById('transAmt').value = item.transAmt || '';
+        document.getElementById('lLit').value = item.lLit || '';
+        document.getElementById('dedRate').value = item.dedRate || '';
+        document.getElementById('birr').value = item.birr || '';
+        document.getElementById('netPayment').value = item.netPayment || '';
 
         queueList.splice(index, 1);
         saveQueueToLocalStorage();
@@ -382,15 +490,33 @@
         }
     }
 
+    function fmtNum(val) {
+        const n = parseFloat(val);
+        if (!n) return "";
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function renderQueue() {
         let tbody = document.getElementById('queueTableBody');
         document.getElementById('queueCount').innerText = queueList.length;
         if (queueList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="19">እባክዎ መረጃዎችን ሞልተው "ወደ ዝርዝር አክል" ይጫኑ</td></tr>';
             return;
         }
         let html = "";
+        let sumTransAmt = 0;
+        let sumBirr = 0;
+        let sumNetPayment = 0;
+
         queueList.forEach((it, idx) => {
+            const tAmt = parseFloat(it.transAmt) || 0;
+            const bAmt = parseFloat(it.birr) || 0;
+            const nPay = (it.netPayment !== undefined) ? (parseFloat(it.netPayment) || 0) : (tAmt - bAmt);
+
+            sumTransAmt += tAmt;
+            sumBirr += bAmt;
+            sumNetPayment += nPay;
+
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><b>${it.fdc}</b></td>
@@ -400,15 +526,33 @@
                 <td>${it.orig}</td>
                 <td>${it.dealer}</td>
                 <td>${it.product}</td>
-                <td>${it.litter}</td>
-                <td>${it.rate}</td>
-                <td><b>${it.transAmt}</b></td>
+                <td>${Number(it.litter || 0).toLocaleString()}</td>
+                <td>${it.kmPaved || ''}</td>
+                <td class="cell-rate">${it.rateB || ''}</td>
+                <td>${it.kmGravel || ''}</td>
+                <td class="cell-rate">${it.rateD || ''}</td>
+                <td class="cell-yellow">${fmtNum(tAmt) || '0.00'}</td>
+                <td>${it.lLit || ''}</td>
+                <td>${it.dedRate || ''}</td>
+                <td>${fmtNum(bAmt) || '-'}</td>
+                <td><b>${fmtNum(nPay) || '0.00'}</b></td>
                 <td>
                     <button type="button" class="btn-edit" onclick="editQueueItem(${idx})">አስተካክል</button>
                     <button type="button" class="btn-delete" onclick="removeQueueItem(${idx})">ሰርዝ</button>
                 </td>
             </tr>`;
         });
+
+        html += `<tr class="total-row">
+            <td colspan="13" style="text-align:right;">Total:</td>
+            <td>${fmtNum(sumTransAmt) || '0.00'}</td>
+            <td></td>
+            <td></td>
+            <td>${fmtNum(sumBirr) || '-'}</td>
+            <td>${fmtNum(sumNetPayment) || '0.00'}</td>
+            <td></td>
+        </tr>`;
+
         tbody.innerHTML = html;
     }
 
@@ -498,37 +642,43 @@
         ];
 
         const aoa = [];
-        // ባዶ የላይ ረድፎች (የ Excel ቅጹ አቀማመጥ እንዲመስል)
         aoa.push([]);
         aoa.push([]);
         aoa.push([]);
         aoa.push(headers);
 
         let totalTransAmt = 0;
+        let totalBirr = 0;
+        let totalNetPayment = 0;
 
         queueList.forEach((it, idx) => {
-            const amt = parseFloat(it.transAmt) || ((parseFloat(it.litter) || 0) * (parseFloat(it.rate) || 0));
+            const amt = parseFloat(it.transAmt) || 0;
+            const birr = parseFloat(it.birr) || 0;
+            const netPay = (it.netPayment !== undefined) ? (parseFloat(it.netPayment) || 0) : (amt - birr);
+
             totalTransAmt += amt;
+            totalBirr += birr;
+            totalNetPayment += netPay;
 
             aoa.push([
                 idx + 1,
                 Number(it.fdc) || it.fdc || "",
                 it.date || "",
-                Number(it.plate) || it.plate || "",
+                it.plate || "",
                 it.destin || "",
                 it.orig || "",
                 it.dealer || "",
                 it.product || "",
                 Number(it.litter) || 0,
-                "", // K/M(paved)
-                "", // Rate(B)
-                "", // K/M©(gravel)
-                "", // Rate(D)
-                Number(amt.toFixed(2)), // Trans. Amt
-                "", // L/Lit
-                "", // Rate
-                "", // Birr
-                Number(amt.toFixed(2))  // Net Payment
+                it.kmPaved ? Number(it.kmPaved) : "",
+                it.rateB ? Number(it.rateB) : "",
+                it.kmGravel ? Number(it.kmGravel) : "",
+                it.rateD ? Number(it.rateD) : "",
+                Number(amt.toFixed(2)),
+                it.lLit ? Number(it.lLit) : "",
+                it.dedRate ? Number(it.dedRate) : "",
+                birr ? Number(birr.toFixed(2)) : "",
+                Number(netPay.toFixed(2))
             ]);
         });
 
@@ -536,8 +686,9 @@
         aoa.push([
             "", "", "", "", "", "", "", "", "", "", "", "", "",
             Number(totalTransAmt.toFixed(2)),
-            "", "", "",
-            Number(totalTransAmt.toFixed(2))
+            "", "",
+            totalBirr ? Number(totalBirr.toFixed(2)) : "-",
+            Number(totalNetPayment.toFixed(2))
         ]);
 
         // ባዶ ረድፍ እና የፊርማ ክፍል (Signatories)
@@ -560,7 +711,6 @@
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        // የአምዶች ስፋት (Column Widths)
         ws["!cols"] = [
             { wch: 6 },  // S.N
             { wch: 11 }, // FDC #
