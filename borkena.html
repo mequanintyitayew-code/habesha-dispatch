@@ -123,8 +123,8 @@
                     <span id="fdcError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
-                    <label>Date (e.g. 10/9/2026)</label>
-                    <input type="text" id="date" placeholder="10/9/2026" onblur="formatDateInputField(this)">
+                    <label>Date (e.g. 10/20/2026)</label>
+                    <input type="text" id="date" placeholder="10/20/2026" onblur="formatDateInputField(this)">
                 </div>
                 <div class="form-group">
                     <label>Plate</label>
@@ -274,7 +274,7 @@
         const s = String(rawVal).trim();
         if (!s) return null;
 
-        // ቀድሞ በ 9-Oct-26 ወይም 09-Oct-2026 ቅርጽ ከሆነ
+        // ቀድሞ በ 20-Oct-26 ወይም 9-Oct-26 ቅርጽ ከሆነ
         const namedMatch = s.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{2,4})$/);
         if (namedMatch) {
             const day = parseInt(namedMatch[1], 10);
@@ -286,7 +286,7 @@
             }
         }
 
-        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ (ለምሳሌ 2026-10-09 -> 9-Oct-26)
+        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ (ለምሳሌ 2026-10-20 -> 20-Oct-26)
         const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
         if (isoMatch) {
             const year = parseInt(isoMatch[1], 10);
@@ -297,13 +297,29 @@
             }
         }
 
-        // 10/9/2026 ወይም 10-9-26 (Day/Month/Year) ቅርጽ ከሆነ
-        const dmyMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
-        if (dmyMatch) {
-            const day = parseInt(dmyMatch[1], 10);
-            const monthIndex = parseInt(dmyMatch[2], 10) - 1;
-            let year = parseInt(dmyMatch[3], 10);
+        // 10/20/2026 (MM/DD/YYYY) ወይም 20/10/2026 (DD/MM/YYYY) ቅርጽ ከሆነ
+        const slashMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+        if (slashMatch) {
+            const first = parseInt(slashMatch[1], 10);
+            const second = parseInt(slashMatch[2], 10);
+            let year = parseInt(slashMatch[3], 10);
             if (year < 100) year += 2000;
+
+            let day, monthIndex;
+            if (first >= 1 && first <= 12 && second > 12 && second <= 31) {
+                // MM/DD/YYYY (ለምሳሌ 10/20/2026 -> ወር 10 = Oct, ቀን 20)
+                monthIndex = first - 1;
+                day = second;
+            } else if (second >= 1 && second <= 12 && first > 12 && first <= 31) {
+                // DD/MM/YYYY (ለምሳሌ 20/10/2026 -> ቀን 20, ወር 10 = Oct)
+                day = first;
+                monthIndex = second - 1;
+            } else {
+                // ሁለቱም <= 12 ከሆኑ በነባሪ MM/DD/YYYY (ለምሳሌ 10/9/2026 -> ወር 10 = Oct, ቀን 9)
+                monthIndex = first - 1;
+                day = second;
+            }
+
             if (monthIndex >= 0 && monthIndex <= 11 && day >= 1 && day <= 31) {
                 return { day, monthIndex, year };
             }
