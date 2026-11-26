@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HABESHA AND PETROLEUM - Multi-Entry System</title>
+    <!-- SheetJS Library for generating real .xlsx Excel files -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary-color: #cc0000;
@@ -453,7 +455,7 @@
             isApproved2 = true;
             comment2Text = "";
             updateApprovalUI();
-            alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል! ወደ Excel በራስ-ሰር በመውረድ ላይ ነው...");
+            alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል! ሙሉ የ Excel ቅጽ በመውረድ ላይ ነው...");
             exportToExcel(false);
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
@@ -484,57 +486,112 @@
             return;
         }
 
+        if (typeof XLSX === "undefined") {
+            alert("❌ የ Excel ፋይል የሚፈጥረው ላይብረሪ ገና አልተጫነም። እባክዎ ኢንተርኔትዎን አረጋግጠው እንደገና ይሞክሩ።");
+            return;
+        }
+
         const headers = [
-            "S.N", "Company", "Transport Type", "FDC #", "Date", "Plate",
-            "Destin.", "Orig", "Dealer", "Product", "Litter", "Rate",
-            "Trans. Amt", "2nd Approver", "3rd Approver", "Comments"
+            "S.N", "FDC #", "Date", "Plate", "Destin.", "Orig", "Dealer", "Product",
+            "Litter", "K/M(paved)", "Rate(B)", "K/M©(gravel)", "Rate(D)",
+            "Trans. Amt", "L/Lit", "Rate", "Birr", "Net Payment"
         ];
 
-        const status2nd = isApproved1 ? "Approved" : (comment1Text ? "Has Comment" : "Pending");
-        const status3rd = isApproved2 ? "Approved" : (comment2Text ? "Has Comment" : "Pending");
-        const combinedComments = [comment1Text && `2nd: ${comment1Text}`, comment2Text && `3rd: ${comment2Text}`]
-            .filter(Boolean).join(" | ");
+        const aoa = [];
+        // ባዶ የላይ ረድፎች (የ Excel ቅጹ አቀማመጥ እንዲመስል)
+        aoa.push([]);
+        aoa.push([]);
+        aoa.push([]);
+        aoa.push(headers);
 
-        const rows = [headers.map(h => `"${h}"`).join(",")];
+        let totalTransAmt = 0;
 
         queueList.forEach((it, idx) => {
-            const line = [
+            const amt = parseFloat(it.transAmt) || ((parseFloat(it.litter) || 0) * (parseFloat(it.rate) || 0));
+            totalTransAmt += amt;
+
+            aoa.push([
                 idx + 1,
-                it.company || currentCompany,
-                it.transportType || currentTransport,
-                it.fdc,
-                it.date,
-                it.plate,
-                it.destin,
-                it.orig,
-                it.dealer,
-                it.product,
-                it.litter,
-                it.rate,
-                it.transAmt,
-                status2nd,
-                status3rd,
-                combinedComments
-            ];
-            rows.push(line.map(val => `"${String(val ?? "").replace(/"/g, '""')}"`).join(","));
+                Number(it.fdc) || it.fdc || "",
+                it.date || "",
+                Number(it.plate) || it.plate || "",
+                it.destin || "",
+                it.orig || "",
+                it.dealer || "",
+                it.product || "",
+                Number(it.litter) || 0,
+                "", // K/M(paved)
+                "", // Rate(B)
+                "", // K/M©(gravel)
+                "", // Rate(D)
+                Number(amt.toFixed(2)), // Trans. Amt
+                "", // L/Lit
+                "", // Rate
+                "", // Birr
+                Number(amt.toFixed(2))  // Net Payment
+            ]);
         });
 
-        const csvWithBom = "\uFEFF" + rows.join("\r\n");
-        const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
+        // የድምር ረድፍ (Total Row)
+        aoa.push([
+            "", "", "", "", "", "", "", "", "", "", "", "", "",
+            Number(totalTransAmt.toFixed(2)),
+            "", "", "",
+            Number(totalTransAmt.toFixed(2))
+        ]);
 
-        const safeComp = (currentCompany || "Dispatch").replace(/[^a-zA-Z0-9_-]/g, "_");
-        const safeTrans = (currentTransport || "List").replace(/[^a-zA-Z0-9_-]/g, "_");
+        // ባዶ ረድፍ እና የፊርማ ክፍል (Signatories)
+        aoa.push([]);
+        aoa.push([
+            "PREPARED BY ______________",
+            "",
+            "Tr/Finance ______________",
+            "",
+            "",
+            "Tr/F/Manager_____________________",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "Received By_________________"
+        ]);
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // የአምዶች ስፋት (Column Widths)
+        ws["!cols"] = [
+            { wch: 6 },  // S.N
+            { wch: 11 }, // FDC #
+            { wch: 13 }, // Date
+            { wch: 14 }, // Plate
+            { wch: 13 }, // Destin.
+            { wch: 12 }, // Orig
+            { wch: 13 }, // Dealer
+            { wch: 10 }, // Product
+            { wch: 12 }, // Litter
+            { wch: 14 }, // K/M(paved)
+            { wch: 11 }, // Rate(B)
+            { wch: 15 }, // K/M©(gravel)
+            { wch: 11 }, // Rate(D)
+            { wch: 15 }, // Trans. Amt
+            { wch: 9 },  // L/Lit
+            { wch: 9 },  // Rate
+            { wch: 11 }, // Birr
+            { wch: 15 }  // Net Payment
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const sheetName = ((currentTransport || "Dispatch") + " Transport").slice(0, 31);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        const safeComp = (currentCompany || "Borkena").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeTrans = (currentTransport || "Transport").replace(/[^a-zA-Z0-9_-]/g, "_");
         const todayStr = new Date().toISOString().slice(0, 10);
-        const fileName = `${safeComp}_${safeTrans}_Approved_${todayStr}.csv`;
+        const fileName = `${safeComp}_${safeTrans}_${todayStr}.xlsx`;
 
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        XLSX.writeFile(wb, fileName);
     }
 
     function updateApprovalUI() {
