@@ -261,6 +261,7 @@
             <div class="btn-container">
                 <button type="button" id="saveAllBtn" class="btn-primary" disabled onclick="saveAllToDatabase()">✅ ሁሉንም ወደ ዳታቤዝ መዝግብ / Save All</button>
                 <button type="button" class="btn-meku" onclick="openHabeshaDatabase()">📁 Habesha (Database)</button>
+                <button type="button" class="btn-secondary" onclick="resetSelection()">⬅️ ወደ መጀመሪያው ተመለስ (Back)</button>
             </div>
         </div>
     </div>
@@ -307,15 +308,12 @@
 
             let day, monthIndex;
             if (first >= 1 && first <= 12 && second > 12 && second <= 31) {
-                // MM/DD/YYYY (ለምሳሌ 10/20/2026 -> ወር 10 = Oct, ቀን 20)
                 monthIndex = first - 1;
                 day = second;
             } else if (second >= 1 && second <= 12 && first > 12 && first <= 31) {
-                // DD/MM/YYYY (ለምሳሌ 20/10/2026 -> ቀን 20, ወር 10 = Oct)
                 day = first;
                 monthIndex = second - 1;
             } else {
-                // ሁለቱም <= 12 ከሆኑ በነባሪ MM/DD/YYYY (ለምሳሌ 10/9/2026 -> ወር 10 = Oct, ቀን 9)
                 monthIndex = first - 1;
                 day = second;
             }
@@ -423,6 +421,9 @@
     function resetSelection() {
         document.getElementById('mainWorkspace').style.display = "none";
         document.getElementById('selectionGate').style.display = "block";
+        document.getElementById('gateCompany').value = "";
+        document.getElementById('gateTransport').value = "";
+        document.getElementById('transportGateGroup').style.display = "none";
         queueList = [];
         renderQueue();
     }
