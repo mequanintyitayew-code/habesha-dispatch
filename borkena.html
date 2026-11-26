@@ -286,7 +286,7 @@
             }
         }
 
-        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ
+        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ (ለምሳሌ 2026-10-09 -> 9-Oct-26)
         const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
         if (isoMatch) {
             const year = parseInt(isoMatch[1], 10);
