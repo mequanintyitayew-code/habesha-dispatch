@@ -364,7 +364,6 @@
         const title = labels[targetKey] || "Password";
         const existingVal = current[targetKey] || "";
 
-        // ለዚህ የተወሰነ Password አስቀድሞ ዋጋ ካለ መጀመሪያ የአሁኑን ያረጋግጣል
         if (existingVal) {
             const verifyOld = prompt(`🔐 የአሁኑን ${title} ያስገቡ (ለመቀየር):`);
             if (verifyOld === null) return;
@@ -1298,7 +1297,7 @@
         let filteredRecords = allRecords.filter(r => r.company === currentCompany && r.transportType === currentTransport);
 
         let win = window.open("", "_blank");
-        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}input{padding:8px;width:300px;margin-bottom:15px;border:1px solid #ccc;border-radius:4px;font-size:1rem;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}.btn-del{background:#c62828;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><input type="text" id="dbSearch" placeholder="🔍 FDC, Plate ወይም Dealer ፈልግ..." onkeyup="filterDatabaseTable()"><table id="dbTable"><thead><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th><th>ድርጊት</th></tr></thead><tbody id="dbTableBody">`);
+        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}.top-controls{display:flex;align-items:center;gap:12px;margin-bottom:15px;flex-wrap:wrap;}input{padding:8px;width:300px;border:1px solid #ccc;border-radius:4px;font-size:1rem;}.btn-back{background:#546e7a;color:white;border:none;padding:9px 14px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:0.9rem;}.btn-back:hover{background:#37474f;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}.btn-del{background:#c62828;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><div class="top-controls"><button type="button" class="btn-back" onclick="goBackToSystem()">⬅️ ተመለስ (Back)</button><input type="text" id="dbSearch" placeholder="🔍 FDC, Plate ወይም Dealer ፈልግ..." onkeyup="filterDatabaseTable()"></div><table id="dbTable"><thead><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th><th>ድርጊት</th></tr></thead><tbody id="dbTableBody">`);
         
         function renderDbRows(records) {
             let tbodyHtml = "";
@@ -1315,6 +1314,12 @@
         win.document.write(renderDbRows(filteredRecords));
         win.document.write(`</tbody></table><script>
             const DB_DEL_PASS = ${JSON.stringify(passwords.dbDeletePass)};
+            function goBackToSystem() {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.focus();
+                }
+                window.close();
+            }
             function filterDatabaseTable() { 
                 let query = document.getElementById('dbSearch').value.toLowerCase(); 
                 let rows = document.querySelectorAll('#dbTableBody tr'); 
