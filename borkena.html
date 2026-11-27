@@ -75,6 +75,16 @@
         .btn-delete { background-color: #c62828; color: white; padding: 4px 8px; font-size: 0.78rem; }
         .action-group-col { display: flex; flex-direction: column; gap: 8px; }
         .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* Password Choice Modal */
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; justify-content: center; align-items: center; padding: 15px; }
+        .modal-card { background: #ffffff; max-width: 440px; width: 100%; border-radius: 10px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border-top: 5px solid #6a1b9a; }
+        .modal-card h3 { margin: 0 0 8px 0; color: #003366; font-size: 1.2rem; }
+        .modal-card p { margin: 0 0 16px 0; color: #555; font-size: 0.9rem; }
+        .choice-btn-list { display: flex; flex-direction: column; gap: 10px; }
+        .choice-btn { width: 100%; text-align: left; padding: 12px 14px; border-radius: 6px; border: 1px solid #cfd8dc; background: #f8fafc; color: #1e293b; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center; }
+        .choice-btn:hover { background: #ede7f6; border-color: #6a1b9a; color: #4a148c; }
+        .modal-footer { margin-top: 16px; display: flex; justify-content: flex-end; }
     </style>
 </head>
 <body>
@@ -114,7 +124,7 @@
                 <span class="context-badge">Transport: <span id="displayTransport">Borkena</span></span>
             </div>
             <div class="top-bar-actions">
-                <button type="button" class="btn-pass" onclick="managePasswords()">🔑 Password አስገባ / ቀይር</button>
+                <button type="button" class="btn-pass" onclick="openPasswordChoiceModal()">🔑 Password አስገባ / ቀይር</button>
                 <button type="button" class="btn-secondary" onclick="resetSelection()">🔄 ድርጅት / ትራንስፖርት ቀይር</button>
             </div>
         </div>
@@ -275,6 +285,35 @@
     </div>
 </div>
 
+<!-- የትኛውን Password መቀየር እንደሚፈልጉ መምረጫ ሳጥን -->
+<div id="passwordChoiceModal" class="modal-backdrop">
+    <div class="modal-card">
+        <h3>🔑 የትኛውን Password መቀየር ይፈልጋሉ?</h3>
+        <p>መቀየር የሚፈልጉትን አንድ አማራጭ ይምረጡ፦</p>
+        <div class="choice-btn-list">
+            <button type="button" class="choice-btn" onclick="changeSpecificPassword('pass2nd')">
+                <span>1. <b>2nd Approve Password</b> ለመቀየር</span>
+                <span>➡️</span>
+            </button>
+            <button type="button" class="choice-btn" onclick="changeSpecificPassword('pass3rd')">
+                <span>2. <b>3rd Approve Password</b> ለመቀየር</span>
+                <span>➡️</span>
+            </button>
+            <button type="button" class="choice-btn" onclick="changeSpecificPassword('queuePass')">
+                <span>3. <b>Queue (አስተካክል / ሰርዝ) Password</b> ለመቀየር</span>
+                <span>➡️</span>
+            </button>
+            <button type="button" class="choice-btn" onclick="changeSpecificPassword('dbDeletePass')">
+                <span>4. <b>Database ሰርዝ Password</b> ለመቀየር</span>
+                <span>➡️</span>
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closePasswordChoiceModal()">ዝጋ (Close)</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const DEFAULT_ORIG = "Djibouti";
@@ -303,63 +342,55 @@
         localStorage.setItem(PASS_STORAGE_KEY, JSON.stringify(obj));
     }
 
-    function managePasswords() {
+    function openPasswordChoiceModal() {
+        document.getElementById('passwordChoiceModal').style.display = 'flex';
+    }
+
+    function closePasswordChoiceModal() {
+        document.getElementById('passwordChoiceModal').style.display = 'none';
+    }
+
+    function changeSpecificPassword(targetKey) {
+        closePasswordChoiceModal();
         const current = loadCustomPasswords();
 
-        // አስቀድሞ Password ከተቀመጠ መጀመሪያ የአሁኑን Password ይጠይቃል
-        if (current.queuePass) {
-            const oldCheck = prompt("🔐 የአሁኑን Password ያስገቡ (ለመቀየር):");
-            if (oldCheck === null) return;
-            if (oldCheck !== current.queuePass && oldCheck !== current.pass2nd && oldCheck !== current.pass3rd) {
-                alert("❌ የተሳሳተ Password!");
+        const labels = {
+            pass2nd: "2nd Approve Password",
+            pass3rd: "3rd Approve Password",
+            queuePass: "Queue (አስተካክል / ሰርዝ) Password",
+            dbDeletePass: "Database ሰርዝ Password"
+        };
+
+        const title = labels[targetKey] || "Password";
+        const existingVal = current[targetKey] || "";
+
+        // ለዚህ የተወሰነ Password አስቀድሞ ዋጋ ካለ መጀመሪያ የአሁኑን ያረጋግጣል
+        if (existingVal) {
+            const verifyOld = prompt(`🔐 የአሁኑን ${title} ያስገቡ (ለመቀየር):`);
+            if (verifyOld === null) return;
+            if (verifyOld !== existingVal) {
+                alert(`❌ የተሳሳተ የአሁኑ ${title}!`);
                 return;
             }
         }
 
-        const newQueuePass = prompt(
-            "🔑 በ Queue ውስጥ ለማስተካከል (Edit) እና ለመሰረዝ (Delete) የሚሆን Password ያስገቡ:",
-            current.queuePass || ""
-        );
-        if (newQueuePass === null) return;
-        if (!newQueuePass.trim()) {
+        const newVal = prompt(`🔑 አዲስ ${title} ያስገቡ:`, existingVal);
+        if (newVal === null) return;
+        if (!newVal.trim()) {
             alert("⚠️ Password ባዶ መሆን አይችልም!");
             return;
         }
 
-        const newPass2nd = prompt(
-            "🔑 ለ 2ተኛው ኃላፊ (2nd Approver) የሚሆን Password ያስገቡ (አሁን ያለው: " + current.pass2nd + "):",
-            current.pass2nd
-        );
-        if (newPass2nd === null) return;
-
-        const newPass3rd = prompt(
-            "🔑 ለ 3ተኛው ኃላፊ (3rd Approver) የሚሆን Password ያስገቡ (አሁን ያለው: " + current.pass3rd + "):",
-            current.pass3rd
-        );
-        if (newPass3rd === null) return;
-
-        const newDbPass = prompt(
-            "🔑 ከ Database ላይ ለመሰረዝ የሚሆን Password ያስገቡ (አሁን ያለው: " + current.dbDeletePass + "):",
-            current.dbDeletePass
-        );
-        if (newDbPass === null) return;
-
-        const updated = {
-            queuePass: newQueuePass.trim(),
-            pass2nd: (newPass2nd.trim() || current.pass2nd),
-            pass3rd: (newPass3rd.trim() || current.pass3rd),
-            dbDeletePass: (newDbPass.trim() || current.dbDeletePass)
-        };
-        saveCustomPasswords(updated);
-        alert("✅ የእርስዎ Password በተሳካ ሁኔታ ተቀምጧል!");
+        current[targetKey] = newVal.trim();
+        saveCustomPasswords(current);
+        alert(`✅ ${title} በተሳካ ሁኔታ ተቀይሯል!`);
     }
 
     function verifyQueueActionPassword(actionLabel) {
         let passwords = loadCustomPasswords();
 
-        // ገና Password ካልተዘጋጀ በቀጥታ እንዲያስገባ ይጠይቀዋል
         if (!passwords.queuePass) {
-            const setNow = prompt(`🔑 እስካሁን ለ Queue Password አልተሰጠም። አሁን ለ ${actionLabel} የሚሆን አዲስ Password ያስገቡ:`);
+            const setNow = prompt(`🔑 እስካሁን ለ Queue (አስተካክል / ሰርዝ) Password አልተሰጠም። አሁን የሚጠቀሙትን አዲስ Password ያስገቡ:`);
             if (setNow === null) return false;
             if (!setNow.trim()) {
                 alert("⚠️ Password ባዶ መሆን አይችልም!");
@@ -371,7 +402,7 @@
             return true;
         }
 
-        const enteredPass = prompt(`🔐 ${actionLabel} ለማድረግ ያስገቡትን Password ይጻፉ:`);
+        const enteredPass = prompt(`🔐 ${actionLabel} ለማድረግ Queue Password ያስገቡ:`);
         if (enteredPass === null) return false;
         if (enteredPass === passwords.queuePass) {
             return true;
