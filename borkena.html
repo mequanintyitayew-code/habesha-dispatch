@@ -418,6 +418,16 @@
         comment1Text = "";
         comment2Text = "";
 
+        let localItems = [];
+        const savedQueue = localStorage.getItem(getLocalQueueKey());
+        if (savedQueue) {
+            try {
+                localItems = JSON.parse(savedQueue) || [];
+            } catch (e) {
+                localItems = [];
+            }
+        }
+
         try {
             const params = new URLSearchParams({
                 company: currentCompany,
@@ -426,32 +436,30 @@
             const res = await fetch('/api/queue?' + params.toString());
             if (res.ok) {
                 const data = await res.json();
-                if (Array.isArray(data)) {
-                    queueList = data;
-                } else if (data && Array.isArray(data.items)) {
-                    queueList = data.items;
+                const serverItems = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
+                if (serverItems.length > 0) {
+                    queueList = serverItems;
                     isApproved1 = Boolean(data.isApproved1);
                     isApproved2 = Boolean(data.isApproved2);
                     comment1Text = data.comment1Text || "";
                     comment2Text = data.comment2Text || "";
+                    localStorage.setItem(getLocalQueueKey(), JSON.stringify(queueList));
+                    updateApprovalUI();
+                    renderQueue();
+                    return;
+                } else if (localItems.length > 0) {
+                    queueList = localItems;
+                    await persistQueueState(true);
+                    updateApprovalUI();
+                    renderQueue();
+                    return;
                 }
-                localStorage.setItem(getLocalQueueKey(), JSON.stringify(queueList));
-                updateApprovalUI();
-                renderQueue();
-                return;
             }
         } catch (e) {
             console.error("Failed to fetch queue from server:", e);
         }
 
-        const savedQueue = localStorage.getItem(getLocalQueueKey());
-        if (savedQueue) {
-            try {
-                queueList = JSON.parse(savedQueue) || [];
-            } catch (e) {
-                queueList = [];
-            }
-        }
+        queueList = localItems;
         updateApprovalUI();
         renderQueue();
     }
@@ -834,13 +842,18 @@
             ]);
         });
 
+        const totalRowIndex = aoa.length;
         aoa.push([
             "", "", "", "", "", "", "", "", "", "", "", "", "",
             Number(totalTransAmt.toFixed(2)),
             "", "",
-            totalBirr ? Number(totalBirr.toFixed(2)) : "-",
+            birrTotalOrDash(totalBirr),
             Number(totalNetPayment.toFixed(2))
         ]);
+
+        function birrTotalOrDash(val) {
+            return val ? Number(val.toFixed(2)) : "-";
+        }
 
         aoa.push([]);
         aoa.push([
@@ -861,19 +874,48 @@
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        const dataStartRow = 4;
+        // የ Date አምድ (Column C -> index 2) እና በሺህ ኮማ ያላቸው የቁጥር አምዶች format እንዲጠብቁ
+        const dataStartRow = 4; // 0-indexed row 4 = Excel row 5
         for (let i = 0; i < queueList.length; i++) {
-            const cellRef = XLSX.utils.encode_cell({ r: dataStartRow + i, c: 2 });
-            if (ws[cellRef]) {
-                ws[cellRef].t = "s";
-                ws[cellRef].z = "d-mmm-yy";
+            const rowIdx = dataStartRow + i;
+            const dateCell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: 2 })];
+            if (dateCell) {
+                dateCell.t = "s";
+                dateCell.z = "d-mmm-yy";
             }
+
+            // Litter (col 8) እና K/M (col 9, col 11) -> ኮማ ያለው ሙሉ ቁጥር (#,##0)
+            [8, 9, 11].forEach((colIdx) => {
+                const cell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })];
+                if (cell && typeof cell.v === "number") {
+                    cell.t = "n";
+                    cell.z = "#,##0";
+                }
+            });
+
+            // Trans. Amt (col 13), Birr (col 16), Net Payment (col 17) -> ኮማ ያለው 2 አስርዮሽ (#,##0.00)
+            [13, 16, 17].forEach((colIdx) => {
+                const cell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })];
+                if (cell && typeof cell.v === "number") {
+                    cell.t = "n";
+                    cell.z = "#,##0.00";
+                }
+            });
         }
+
+        // የ Total ረድፍ ቁጥሮች በ Excel ውስጥ በሺህ ኮማ እንዲታዩ
+        [13, 16, 17].forEach((colIdx) => {
+            const cell = ws[XLSX.utils.encode_cell({ r: totalRowIndex, c: colIdx })];
+            if (cell && typeof cell.v === "number") {
+                cell.t = "n";
+                cell.z = "#,##0.00";
+            }
+        });
 
         ws["!cols"] = [
             { wch: 6 },  { wch: 11 }, { wch: 13 }, { wch: 14 }, { wch: 13 }, { wch: 12 },
-            { wch: 13 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 11 }, { wch: 15 },
-            { wch: 11 }, { wch: 15 }, { wch: 9 },  { wch: 9 },  { wch: 11 }, { wch: 15 }
+            { wch: 13 }, { wch: 10 }, { wch: 13 }, { wch: 14 }, { wch: 11 }, { wch: 15 },
+            { wch: 11 }, { wch: 17 }, { wch: 9 },  { wch: 9 },  { wch: 14 }, { wch: 17 }
         ];
 
         const wb = XLSX.utils.book_new();
