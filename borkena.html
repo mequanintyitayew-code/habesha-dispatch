@@ -500,6 +500,16 @@
     const PASS_2ND = "2222";
     const PASS_3RD = "3333";
 
+    function verifyQueueActionPassword(actionLabel) {
+        const enteredPass = prompt(`🔐 ${actionLabel} ለማድረግ የኃላፊ የይለፍ ቃል (Password) ያስገቡ:`);
+        if (enteredPass === null) return false;
+        if (enteredPass === PASS_2ND || enteredPass === PASS_3RD) {
+            return true;
+        }
+        alert("❌ የተሳሳተ የይለፍ ቃል! ፈቃድ የለዎትም።");
+        return false;
+    }
+
     function validateNumbersOnly(input, errorId) {
         let val = input.value;
         let errorSpan = document.getElementById(errorId);
@@ -761,6 +771,8 @@
     }
 
     async function editQueueItem(index) {
+        if (!verifyQueueActionPassword("ማስተካከል (Edit)")) return;
+
         let item = queueList[index];
         document.getElementById('fdc').value = item.fdc || '';
         document.getElementById('date').value = formatToShortDate(item.date || '');
@@ -787,6 +799,8 @@
     }
 
     async function removeQueueItem(index) {
+        if (!verifyQueueActionPassword("መሰረዝ (Delete)")) return;
+
         queueList.splice(index, 1);
         await persistQueueState(true);
         renderQueue();
