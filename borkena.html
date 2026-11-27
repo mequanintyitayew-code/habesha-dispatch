@@ -36,7 +36,7 @@
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.78rem; font-weight: bold; margin-bottom: 4px; color: #333; }
-        .form-group input { padding: 7px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.88rem; background-color: #fff; transition: border 0.2s; }
+        .form-group input, .form-group select { padding: 7px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.88rem; background-color: #fff; transition: border 0.2s; }
         .form-group input.input-error { border: 2px solid #d32f2f; background-color: #ffebee; }
         .form-group input.highlight-yellow { background-color: #fffde7; font-weight: bold; border-color: #fbc02d; }
         .form-group input.highlight-green { background-color: #e8f5e9; font-weight: bold; border-color: #66bb6a; }
@@ -132,12 +132,12 @@
                 </div>
                 <div class="form-group">
                     <label>Destin. (ፊደል ብቻ)</label>
-                    <input type="text" id="destin" placeholder="Hawassa" oninput="validateLettersOnly(this, 'destinError')">
+                    <input type="text" id="destin" placeholder="Hawassa" oninput="validateLettersOnly(this, 'destinError'); autoFillByDestination(this.value);" onchange="autoFillByDestination(this.value);">
                     <span id="destinError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
                     <label>Orig (ፊደል ብቻ)</label>
-                    <input type="text" id="orig" placeholder="Djibouti" oninput="validateLettersOnly(this, 'origError')">
+                    <input type="text" id="orig" value="Djibouti" placeholder="Djibouti" oninput="validateLettersOnly(this, 'origError')">
                     <span id="origError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -146,9 +146,12 @@
                     <span id="dealerError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
                 </div>
                 <div class="form-group">
-                    <label>Product (ፊደል ብቻ)</label>
-                    <input type="text" id="product" placeholder="AGO" oninput="validateLettersOnly(this, 'productError')">
-                    <span id="productError" class="error-msg">⚠️ Invalid! (ፊደል ብቻ)</span>
+                    <label>Product</label>
+                    <select id="product">
+                        <option value="AGO">AGO</option>
+                        <option value="MGR">MGR</option>
+                        <option value="HFO">HFO</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Litter</label>
@@ -162,7 +165,7 @@
                 </div>
                 <div class="form-group">
                     <label>Rate(B)</label>
-                    <input type="text" id="rateB" placeholder="0.91768" oninput="validateNumbersOnly(this, 'rateBError'); calcAmt();">
+                    <input type="text" id="rateB" value="0.91768" placeholder="0.91768" oninput="validateNumbersOnly(this, 'rateBError'); calcAmt();">
                     <span id="rateBError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -172,7 +175,7 @@
                 </div>
                 <div class="form-group">
                     <label>Rate(D)</label>
-                    <input type="text" id="rateD" placeholder="1.04134" oninput="validateNumbersOnly(this, 'rateDError'); calcAmt();">
+                    <input type="text" id="rateD" value="1.04134" placeholder="1.04134" oninput="validateNumbersOnly(this, 'rateDError'); calcAmt();">
                     <span id="rateDError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -269,6 +272,148 @@
 
 <script>
     const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const DEFAULT_ORIG = "Djibouti";
+    const DEFAULT_RATE_B = "0.91768";
+    const DEFAULT_RATE_D = "1.04134";
+
+    const STATION_MASTER_DATA = [
+        { station: "ABALA", dealer: "G/Egziabher", paved: 668, gravel: 0 },
+        { station: "ABRHAJIRA", dealer: "Berbelay", paved: 1202, gravel: 0 },
+        { station: "ALETACHEKO", dealer: "Abayneh", paved: 1115, gravel: 0 },
+        { station: "AMANUAL", dealer: "BIRUK", paved: 1262, gravel: 0 },
+        { station: "ARARTI CERAMIC", dealer: "Manufacture", paved: 853, gravel: 61 },
+        { station: "ARERTI", dealer: "ማኅቶት ኮንስትራክሽን", paved: 853, gravel: 61 },
+        { station: "AREWI WORABE", dealer: "Hibir", paved: 1033, gravel: 20 },
+        { station: "ARRCA B/DAR", dealer: "A.R.R", paved: 936, gravel: 0 },
+        { station: "ARRCA D/BIREHAN", dealer: "A.R.R", paved: 688, gravel: 89 },
+        { station: "ARRCA D/MARKOS", dealer: "A.R.R", paved: 1235, gravel: 0 },
+        { station: "ARRCA DESSIE", dealer: "A.R.R", paved: 467, gravel: 89 },
+        { station: "ARRCA GONDER", dealer: "A.R.R", paved: 985, gravel: 0 },
+        { station: "ARRCA WOLDIA", dealer: "A.R.R", paved: 577, gravel: 0 },
+        { station: "ARWE DENBECHA B/DAR", dealer: "ARWE", paved: 936, gravel: 0 },
+        { station: "ARWE WORABE/AWASH", dealer: "Hibir", paved: 330, gravel: 20 },
+        { station: "ASENDABO", dealer: "Mohamed", paved: 1216, gravel: 0 },
+        { station: "AWASH/A/ABABA", dealer: "", paved: 224, gravel: 0 },
+        { station: "AWASH/ASENDABO", dealer: "Mohamed", paved: 513, gravel: 0 },
+        { station: "AWASH/DEJEN", dealer: "", paved: 457, gravel: 0 },
+        { station: "AWASH/DJBUTI", dealer: "", paved: 703, gravel: 0 },
+        { station: "AWASH/JINKA", dealer: "Ejigu", paved: 825, gravel: 0 },
+        { station: "AWI GUANGUA", dealer: "Mesele", paved: 1097, gravel: 25 },
+        { station: "BENCH SHEKO", dealer: "Yemata", paved: 1477, gravel: 28 },
+        { station: "BENCH SHEKO-GENJA", dealer: "ZEMACH", paved: 1491, gravel: 0 },
+        { station: "BICHENA", dealer: "YARED", paved: 1200, gravel: 0 },
+        { station: "BIRKOT", dealer: "Reshid", paved: 507, gravel: 239 },
+        { station: "BODITY", dealer: "BARUD", paved: 1146, gravel: 0 },
+        { station: "BOLE", dealer: "Mekuanint", paved: 927, gravel: 0 },
+        { station: "CHAGNI", dealer: "Seied", paved: 1052, gravel: 57 },
+        { station: "CHIYE APPAREL M(DUKEI", dealer: "CHIYE", paved: 890, gravel: 0 },
+        { station: "DEGAHBUR", dealer: "Mohamed", paved: 427, gravel: 239 },
+        { station: "DEJEN", dealer: "Getinet", paved: 1160, gravel: 0 },
+        { station: "DEJEN", dealer: "Yenus", paved: 1160, gravel: 0 },
+        { station: "DENBECHA", dealer: "Sintayehu", paved: 1141, gravel: 0 },
+        { station: "DI YUAN CERAMIC", dealer: "Diayuan", paved: 890, gravel: 0 },
+        { station: "DIRE DAWA", dealer: "Meseret", paved: 105, gravel: 239 },
+        { station: "DONGORA", dealer: "Gulilat", paved: 1101, gravel: 10 },
+        { station: "DOYOGENA", dealer: "Melkamu", paved: 1114, gravel: 0 },
+        { station: "ELUBUABUR BURE", dealer: "AYINALEM EN", paved: 1567, gravel: 0 },
+        { station: "ENEMAY", dealer: "Belachew", paved: 1188, gravel: 0 },
+        { station: "FAFEM (FAFEN)", dealer: "Abdulfetah", paved: 223, gravel: 239 },
+        { station: "GAMBELLA", dealer: "BUABUR", paved: 1754, gravel: 0 },
+        { station: "GERBA", dealer: "Tamirat", paved: 1232, gravel: 0 },
+        { station: "GINDEWOIN", dealer: "Hayalkachew", paved: 1279, gravel: 0 },
+        { station: "GODE", dealer: "Abduraman", paved: 840, gravel: 239 },
+        { station: "HALABA", dealer: "Fuad", paved: 1093, gravel: 0 },
+        { station: "HAMBALA", dealer: "Demelash", paved: 1203, gravel: 24 },
+        { station: "HAMER DIMEKA", dealer: "HASSEN", paved: 1492, gravel: 56 },
+        { station: "HARAR DEPO-DJIBUTI", dealer: "", paved: 156, gravel: 239 },
+        { station: "HARAR/DIRE DAWA", dealer: "Meseret", paved: 51, gravel: 0 },
+        { station: "HARGELE", dealer: "Wolella", paved: 840, gravel: 427 },
+        { station: "HAWASSA", dealer: "Netsanet", paved: 1053, gravel: 0 },
+        { station: "HIBIR CONSTRUCTION B/D", dealer: "Hibir", paved: 936, gravel: 0 },
+        { station: "JIGJIGA (SOMALIA POLICE)", dealer: "S.P.R", paved: 256, gravel: 239 },
+        { station: "JINKA", dealer: "Ejigu", paved: 1528, gravel: 0 },
+        { station: "KESA", dealer: "Tafere", paved: 1060, gravel: 0 },
+        { station: "KOLFE", dealer: "Elsa", paved: 927, gravel: 0 },
+        { station: "KONTA AMAYA", dealer: "K.D.Assossatic", paved: 1273, gravel: 102 },
+        { station: "LEMI KURA(ADDIS ABABA)", dealer: "Yilkal", paved: 927, gravel: 0 },
+        { station: "LUMAME", dealer: "Yenus", paved: 1195, gravel: 0 },
+        { station: "MAHABERE BIREHAN", dealer: "YARED", paved: 1188, gravel: 0 },
+        { station: "MANBUK", dealer: "Dawud", paved: 1052, gravel: 132 },
+        { station: "MANBUK/B/DAR", dealer: "Dawud", paved: 116, gravel: 132 },
+        { station: "MEGA", dealer: "Tamirat", paved: 1448, gravel: 0 },
+        { station: "MEKDELLA", dealer: "SEMAHAGNE", paved: 554, gravel: 182 },
+        { station: "MEKANEYESUS", dealer: "F/Mariam", paved: 835, gravel: 78 },
+        { station: "MESENKILA", dealer: "Tamene", paved: 1093, gravel: 0 },
+        { station: "MESFIN SOL.CON.WOYITO", dealer: "Mesfin .S.CON", paved: 1450, gravel: 47 },
+        { station: "METEMA", dealer: "Aderajew", paved: 1169, gravel: 0 },
+        { station: "MIZAN AMAN", dealer: "HIWOT TAMIR", paved: 1456, gravel: 53 },
+        { station: "MOLALE CITY", dealer: "NBW", paved: 638, gravel: 154 },
+        { station: "MORICHA(SHONDOLO)", dealer: "ABERA", paved: 1070, gravel: 0 },
+        { station: "MUGER CEMENT", dealer: "M/C/Factory", paved: 1015, gravel: 0 },
+        { station: "MUGER TATEK", dealer: "M/C/Factory", paved: 947, gravel: 0 },
+        { station: "NIFASILK", dealer: "Rahel", paved: 927, gravel: 0 },
+        { station: "SERDO", dealer: "Mekuanint", paved: 300, gravel: 0 },
+        { station: "SHASHEMENE/HAWASSA", dealer: "Netsanet", paved: 23, gravel: 0 },
+        { station: "SHIRARO", dealer: "W/Aregai", paved: 1120, gravel: 0 },
+        { station: "SHONDOLA(MORICHA)", dealer: "Abera", paved: 1070, gravel: 0 },
+        { station: "SULULTA - DJIBUTI", dealer: "", paved: 952, gravel: 0 },
+        { station: "SULULTA/A/ABABA", dealer: "", paved: 25, gravel: 0 },
+        { station: "SUMMIT", dealer: "Michal", paved: 927, gravel: 0 },
+        { station: "TATEK", dealer: "M/C/Factory", paved: 947, gravel: 0 },
+        { station: "TETICHA", dealer: "Kefale", paved: 1137, gravel: 0 },
+        { station: "UNIQUE MAKARONI B/DA", dealer: "UNIQUE", paved: 936, gravel: 0 },
+        { station: "WARDER", dealer: "Abdurazak", paved: 814, gravel: 0 },
+        { station: "WOLAITA/JINKA", dealer: "Ejigu", paved: 365, gravel: 0 },
+        { station: "FAFEN - HARAR DEP", dealer: "", paved: 0, gravel: 67 }
+    ];
+
+    function normalizeStationName(name) {
+        return String(name || "")
+            .toLowerCase()
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function autoFillByDestination(rawDest) {
+        const q = normalizeStationName(rawDest);
+        if (!q || q.length < 2) return;
+
+        let match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === q);
+        if (!match) {
+            match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station).startsWith(q));
+        }
+        if (!match) {
+            match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station).includes(q));
+        }
+
+        if (match) {
+            if (match.dealer) {
+                document.getElementById('dealer').value = match.dealer;
+            }
+            document.getElementById('kmPaved').value = match.paved ?? 0;
+            document.getElementById('kmGravel').value = match.gravel ?? 0;
+            if (!document.getElementById('orig').value.trim()) {
+                document.getElementById('orig').value = DEFAULT_ORIG;
+            }
+            if (!document.getElementById('rateB').value.trim()) {
+                document.getElementById('rateB').value = DEFAULT_RATE_B;
+            }
+            if (!document.getElementById('rateD').value.trim()) {
+                document.getElementById('rateD').value = DEFAULT_RATE_D;
+            }
+            calcAmt();
+        }
+    }
+
+    function setProductSelectValue(val) {
+        const selectEl = document.getElementById('product');
+        const cleaned = String(val || "AGO").trim().toUpperCase();
+        if (["AGO", "MGR", "HFO"].includes(cleaned)) {
+            selectEl.value = cleaned;
+        } else {
+            selectEl.value = "AGO";
+        }
+    }
 
     function parseInputDateParts(rawVal) {
         if (!rawVal) return null;
@@ -555,14 +700,17 @@
         }
 
         let kmPavedVal = parseFloat(document.getElementById('kmPaved').value) || 0;
-        let rateBVal = parseFloat(document.getElementById('rateB').value) || 0;
+        let rateBVal = parseFloat(document.getElementById('rateB').value);
+        if (Number.isNaN(rateBVal)) rateBVal = parseFloat(DEFAULT_RATE_B);
         let kmGravelVal = parseFloat(document.getElementById('kmGravel').value) || 0;
-        let rateDVal = parseFloat(document.getElementById('rateD').value) || 0;
+        let rateDVal = parseFloat(document.getElementById('rateD').value);
+        if (Number.isNaN(rateDVal)) rateDVal = parseFloat(DEFAULT_RATE_D);
         let lLitVal = parseFloat(document.getElementById('lLit').value) || 0;
         let dedRateVal = parseFloat(document.getElementById('dedRate').value) || 0;
         let birrVal = parseFloat(document.getElementById('birr').value) || 0;
         let transAmtVal = parseFloat(document.getElementById('transAmt').value) || 0;
         let netPaymentVal = parseFloat(document.getElementById('netPayment').value) || 0;
+        let origVal = document.getElementById('orig').value.trim() || DEFAULT_ORIG;
 
         let item = {
             company: currentCompany,
@@ -571,7 +719,7 @@
             date: formattedDate,
             plate: plate,
             destin: document.getElementById('destin').value,
-            orig: document.getElementById('orig').value,
+            orig: origVal,
             dealer: document.getElementById('dealer').value,
             product: document.getElementById('product').value,
             litter: parseFloat(litter) || 0,
@@ -597,14 +745,14 @@
         document.getElementById('fdc').value = '';
         document.getElementById('plate').value = '';
         document.getElementById('destin').value = '';
-        document.getElementById('orig').value = '';
+        document.getElementById('orig').value = DEFAULT_ORIG;
         document.getElementById('dealer').value = '';
-        document.getElementById('product').value = '';
+        setProductSelectValue('AGO');
         document.getElementById('litter').value = '';
         document.getElementById('kmPaved').value = '';
-        document.getElementById('rateB').value = '';
+        document.getElementById('rateB').value = DEFAULT_RATE_B;
         document.getElementById('kmGravel').value = '';
-        document.getElementById('rateD').value = '';
+        document.getElementById('rateD').value = DEFAULT_RATE_D;
         document.getElementById('transAmt').value = '';
         document.getElementById('lLit').value = '';
         document.getElementById('dedRate').value = '';
@@ -618,14 +766,14 @@
         document.getElementById('date').value = formatToShortDate(item.date || '');
         document.getElementById('plate').value = item.plate || '';
         document.getElementById('destin').value = item.destin || '';
-        document.getElementById('orig').value = item.orig || '';
+        document.getElementById('orig').value = item.orig || DEFAULT_ORIG;
         document.getElementById('dealer').value = item.dealer || '';
-        document.getElementById('product').value = item.product || '';
+        setProductSelectValue(item.product || 'AGO');
         document.getElementById('litter').value = item.litter || '';
         document.getElementById('kmPaved').value = item.kmPaved || '';
-        document.getElementById('rateB').value = item.rateB || '';
+        document.getElementById('rateB').value = (item.rateB !== undefined && item.rateB !== "") ? item.rateB : DEFAULT_RATE_B;
         document.getElementById('kmGravel').value = item.kmGravel || '';
-        document.getElementById('rateD').value = item.rateD || '';
+        document.getElementById('rateD').value = (item.rateD !== undefined && item.rateD !== "") ? item.rateD : DEFAULT_RATE_D;
         document.getElementById('transAmt').value = item.transAmt || '';
         document.getElementById('lLit').value = item.lLit || '';
         document.getElementById('dedRate').value = item.dedRate || '';
@@ -874,8 +1022,7 @@
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        // የ Date አምድ (Column C -> index 2) እና በሺህ ኮማ ያላቸው የቁጥር አምዶች format እንዲጠብቁ
-        const dataStartRow = 4; // 0-indexed row 4 = Excel row 5
+        const dataStartRow = 4;
         for (let i = 0; i < queueList.length; i++) {
             const rowIdx = dataStartRow + i;
             const dateCell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: 2 })];
@@ -884,7 +1031,6 @@
                 dateCell.z = "d-mmm-yy";
             }
 
-            // Litter (col 8) እና K/M (col 9, col 11) -> ኮማ ያለው ሙሉ ቁጥር (#,##0)
             [8, 9, 11].forEach((colIdx) => {
                 const cell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })];
                 if (cell && typeof cell.v === "number") {
@@ -893,7 +1039,6 @@
                 }
             });
 
-            // Trans. Amt (col 13), Birr (col 16), Net Payment (col 17) -> ኮማ ያለው 2 አስርዮሽ (#,##0.00)
             [13, 16, 17].forEach((colIdx) => {
                 const cell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })];
                 if (cell && typeof cell.v === "number") {
@@ -903,7 +1048,6 @@
             });
         }
 
-        // የ Total ረድፍ ቁጥሮች በ Excel ውስጥ በሺህ ኮማ እንዲታዩ
         [13, 16, 17].forEach((colIdx) => {
             const cell = ws[XLSX.utils.encode_cell({ r: totalRowIndex, c: colIdx })];
             if (cell && typeof cell.v === "number") {
