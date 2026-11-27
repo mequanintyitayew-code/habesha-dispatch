@@ -275,7 +275,6 @@
         const s = String(rawVal).trim();
         if (!s) return null;
 
-        // ቀድሞ በ 20-Oct-26 ወይም 9-Oct-26 ቅርጽ ከሆነ
         const namedMatch = s.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{2,4})$/);
         if (namedMatch) {
             const day = parseInt(namedMatch[1], 10);
@@ -287,7 +286,6 @@
             }
         }
 
-        // YYYY-MM-DD (ISO) ቅርጽ ከሆነ (ለምሳሌ 2026-10-20 -> 20-Oct-26)
         const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
         if (isoMatch) {
             const year = parseInt(isoMatch[1], 10);
@@ -298,7 +296,6 @@
             }
         }
 
-        // 10/20/2026 (MM/DD/YYYY) ወይም 20/10/2026 (DD/MM/YYYY) ቅርጽ ከሆነ
         const slashMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
         if (slashMatch) {
             const first = parseInt(slashMatch[1], 10);
@@ -397,7 +394,7 @@
         }
     }
 
-    function handleTransportSelect() {
+    async function handleTransportSelect() {
         let trans = document.getElementById('gateTransport').value;
         if (trans !== "" && currentCompany !== "") {
             currentTransport = trans;
@@ -405,16 +402,82 @@
             document.getElementById('displayTransport').innerText = currentTransport;
             document.getElementById('selectionGate').style.display = "none";
             document.getElementById('mainWorkspace').style.display = "block";
-            
-            let savedQueue = localStorage.getItem('borkena_queue_' + currentCompany + '_' + currentTransport);
-            if (savedQueue) {
-                try {
-                    queueList = JSON.parse(savedQueue);
-                } catch (e) {
-                    queueList = [];
+
+            await loadQueueFromServer();
+        }
+    }
+
+    function getLocalQueueKey() {
+        return 'borkena_queue_' + currentCompany + '_' + currentTransport;
+    }
+
+    async function loadQueueFromServer() {
+        queueList = [];
+        isApproved1 = false;
+        isApproved2 = false;
+        comment1Text = "";
+        comment2Text = "";
+
+        try {
+            const params = new URLSearchParams({
+                company: currentCompany,
+                transportType: currentTransport
+            });
+            const res = await fetch('/api/queue?' + params.toString());
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    queueList = data;
+                } else if (data && Array.isArray(data.items)) {
+                    queueList = data.items;
+                    isApproved1 = Boolean(data.isApproved1);
+                    isApproved2 = Boolean(data.isApproved2);
+                    comment1Text = data.comment1Text || "";
+                    comment2Text = data.comment2Text || "";
                 }
+                localStorage.setItem(getLocalQueueKey(), JSON.stringify(queueList));
+                updateApprovalUI();
+                renderQueue();
+                return;
             }
-            renderQueue();
+        } catch (e) {
+            console.error("Failed to fetch queue from server:", e);
+        }
+
+        const savedQueue = localStorage.getItem(getLocalQueueKey());
+        if (savedQueue) {
+            try {
+                queueList = JSON.parse(savedQueue) || [];
+            } catch (e) {
+                queueList = [];
+            }
+        }
+        updateApprovalUI();
+        renderQueue();
+    }
+
+    async function persistQueueState(syncServer = true) {
+        if (currentCompany && currentTransport) {
+            localStorage.setItem(getLocalQueueKey(), JSON.stringify(queueList));
+        }
+        if (!syncServer || !currentCompany || !currentTransport) return;
+
+        try {
+            await fetch('/api/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    company: currentCompany,
+                    transportType: currentTransport,
+                    items: queueList,
+                    isApproved1: isApproved1,
+                    isApproved2: isApproved2,
+                    comment1Text: comment1Text,
+                    comment2Text: comment2Text
+                })
+            });
+        } catch (e) {
+            console.error("Failed to sync queue to server:", e);
         }
     }
 
@@ -425,6 +488,11 @@
         document.getElementById('gateTransport').value = "";
         document.getElementById('transportGateGroup').style.display = "none";
         queueList = [];
+        isApproved1 = false;
+        isApproved2 = false;
+        comment1Text = "";
+        comment2Text = "";
+        updateApprovalUI();
         renderQueue();
     }
 
@@ -512,7 +580,7 @@
         };
 
         queueList.push(item);
-        saveQueueToLocalStorage();
+        await persistQueueState(true);
         renderQueue();
         clearFormInputs();
     }
@@ -536,7 +604,7 @@
         document.getElementById('netPayment').value = '';
     }
 
-    function editQueueItem(index) {
+    async function editQueueItem(index) {
         let item = queueList[index];
         document.getElementById('fdc').value = item.fdc || '';
         document.getElementById('date').value = formatToShortDate(item.date || '');
@@ -557,21 +625,15 @@
         document.getElementById('netPayment').value = item.netPayment || '';
 
         queueList.splice(index, 1);
-        saveQueueToLocalStorage();
+        await persistQueueState(true);
         renderQueue();
         alert("✏️ መረጃው ለማስተካከል ወደ ላይኛው ፎርም ተመልሷል፤ አስተካክለው 'ወደ ዝርዝር አክል' ይጫኑ።");
     }
 
-    function removeQueueItem(index) {
+    async function removeQueueItem(index) {
         queueList.splice(index, 1);
-        saveQueueToLocalStorage();
+        await persistQueueState(true);
         renderQueue();
-    }
-
-    function saveQueueToLocalStorage() {
-        if (currentCompany && currentTransport) {
-            localStorage.setItem('borkena_queue_' + currentCompany + '_' + currentTransport, JSON.stringify(queueList));
-        }
     }
 
     function fmtNum(val) {
@@ -641,7 +703,7 @@
         tbody.innerHTML = html;
     }
 
-    function doFirstApproval() {
+    async function doFirstApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         let enteredPass = prompt("🔐 የ2ኛው ኃላፊ (2nd Approver) የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
@@ -650,13 +712,14 @@
             isApproved1 = true;
             comment1Text = "";
             updateApprovalUI();
+            await persistQueueState(true);
             alert("✅ 2ተኛው ኃላፊ ማረጋገጫው ተሳክቷል!");
         } else {
             alert("❌ የተሳሳተ የይለፍ ቃል!");
         }
     }
 
-    function doFirstComment() {
+    async function doFirstComment() {
         if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ የለም!"); return; }
         let enteredPass = prompt("🔐 የ2ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
@@ -667,6 +730,7 @@
                 isApproved1 = false;
                 comment1Text = msg.trim();
                 updateApprovalUI();
+                await persistQueueState(true);
                 alert("📢 አስተያየትዎ ተመዝግቧል!");
             }
         } else {
@@ -674,7 +738,7 @@
         }
     }
 
-    function doSecondApproval() {
+    async function doSecondApproval() {
         if (queueList.length === 0) { alert("⚠️ እባክዎ መጀመሪያ ቢያንስ አንድ መረጃ ወደ ዝርዝር አክል!"); return; }
         if (!isApproved1) { alert("⚠️ መጀመሪያ 2ተኛው ኃላፊ ማረጋገጥ አለበት!"); return; }
         let enteredPass = prompt("🔐 የ3ኛው ኃላፊ (3rd Approver) የይለፍ ቃል ያስገቡ:");
@@ -684,6 +748,7 @@
             isApproved2 = true;
             comment2Text = "";
             updateApprovalUI();
+            await persistQueueState(true);
             alert("✅ 3ተኛው ኃላፊ ማረጋገጫው ተሳክቷል! ሙሉ የ Excel ቅጽ በመውረድ ላይ ነው...");
             exportToExcel(false);
         } else {
@@ -691,7 +756,7 @@
         }
     }
 
-    function doSecondComment() {
+    async function doSecondComment() {
         if (queueList.length === 0) { alert("⚠️ አስተያየት የሚሰጥበት መረጃ የለም!"); return; }
         let enteredPass = prompt("🔐 የ3ኛው ኃላፊ የይለፍ ቃል ያስገቡ:");
         if (enteredPass === null) return;
@@ -702,6 +767,7 @@
                 isApproved2 = false;
                 comment2Text = msg.trim();
                 updateApprovalUI();
+                await persistQueueState(true);
                 alert("📢 አስተያየትዎ ተመዝግቧል!");
             }
         } else {
@@ -768,7 +834,6 @@
             ]);
         });
 
-        // የድምር ረድፍ (Total Row)
         aoa.push([
             "", "", "", "", "", "", "", "", "", "", "", "", "",
             Number(totalTransAmt.toFixed(2)),
@@ -777,7 +842,6 @@
             Number(totalNetPayment.toFixed(2))
         ]);
 
-        // ባዶ ረድፍ እና የፊርማ ክፍል (Signatories)
         aoa.push([]);
         aoa.push([
             "PREPARED BY ______________",
@@ -797,8 +861,7 @@
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        // የ Date አምድ (Column C -> index 2, ከረድፍ 5 ጀምሮ) format እንዲጠብቅ
-        const dataStartRow = 4; // 0-indexed row 4 = Excel row 5
+        const dataStartRow = 4;
         for (let i = 0; i < queueList.length; i++) {
             const cellRef = XLSX.utils.encode_cell({ r: dataStartRow + i, c: 2 });
             if (ws[cellRef]) {
@@ -808,24 +871,9 @@
         }
 
         ws["!cols"] = [
-            { wch: 6 },  // S.N
-            { wch: 11 }, // FDC #
-            { wch: 13 }, // Date
-            { wch: 14 }, // Plate
-            { wch: 13 }, // Destin.
-            { wch: 12 }, // Orig
-            { wch: 13 }, // Dealer
-            { wch: 10 }, // Product
-            { wch: 12 }, // Litter
-            { wch: 14 }, // K/M(paved)
-            { wch: 11 }, // Rate(B)
-            { wch: 15 }, // K/M©(gravel)
-            { wch: 11 }, // Rate(D)
-            { wch: 15 }, // Trans. Amt
-            { wch: 9 },  // L/Lit
-            { wch: 9 },  // Rate
-            { wch: 11 }, // Birr
-            { wch: 15 }  // Net Payment
+            { wch: 6 },  { wch: 11 }, { wch: 13 }, { wch: 14 }, { wch: 13 }, { wch: 12 },
+            { wch: 13 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 11 }, { wch: 15 },
+            { wch: 11 }, { wch: 15 }, { wch: 9 },  { wch: 9 },  { wch: 11 }, { wch: 15 }
         ];
 
         const wb = XLSX.utils.book_new();
@@ -902,12 +950,12 @@
             if (res.ok && result.status === 'success') {
                 alert("✅ ሁሉም መረጃዎች በተሳካ ሁኔታ ወደ ዳታቤዝ ተመዝግበዋል!");
                 queueList = [];
-                saveQueueToLocalStorage();
-                renderQueue();
                 isApproved1 = false;
                 isApproved2 = false;
                 comment1Text = "";
                 comment2Text = "";
+                await persistQueueState(true);
+                renderQueue();
                 updateApprovalUI();
             } else {
                 alert("❌ ስህተት: " + (result.message || "መመዝገብ አልተቻለም"));
