@@ -513,6 +513,11 @@
         const q = normalizeStationName(rawDest);
         if (!q || q.length < 2) return null;
 
+        if (q === "worabe" || q.includes("hibir worabe")) {
+            const exactWorabe = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === "hibir worabe");
+            if (exactWorabe) return exactWorabe;
+        }
+
         let match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === q);
         if (!match) {
             match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station).startsWith(q));
