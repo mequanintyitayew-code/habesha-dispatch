@@ -1355,15 +1355,50 @@
         let filteredRecords = allRecords.filter(r => r.company === currentCompany && r.transportType === currentTransport);
 
         let win = window.open("", "_blank");
-        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;}.top-controls{display:flex;align-items:center;gap:12px;margin-bottom:15px;flex-wrap:wrap;}input{padding:8px;width:300px;border:1px solid #ccc;border-radius:4px;font-size:1rem;}.btn-back{background:#546e7a;color:white;border:none;padding:9px 14px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:0.9rem;}.btn-back:hover{background:#37474f;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:center;}th{background:#eee;}.btn-del{background:#c62828;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><div class="top-controls"><button type="button" class="btn-back" onclick="goBackToSystem()">⬅️ ተመለስ (Back)</button><input type="text" id="dbSearch" placeholder="🔍 FDC, Plate ወይም Dealer ፈልግ..." onkeyup="filterDatabaseTable()"></div><table id="dbTable"><thead><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>Rate</th><th>Total</th><th>ድርጊት</th></tr></thead><tbody id="dbTableBody">`);
+        win.document.write(`<html><head><title>Habesha Database Viewer</title><style>body{font-family:sans-serif;padding:20px;overflow-x:auto;}.top-controls{display:flex;align-items:center;gap:12px;margin-bottom:15px;flex-wrap:wrap;}input{padding:8px;width:300px;border:1px solid #ccc;border-radius:4px;font-size:1rem;}.btn-back{background:#546e7a;color:white;border:none;padding:9px 14px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:0.9rem;}.btn-back:hover{background:#37474f;}table{width:100%;border-collapse:collapse;font-size:0.82rem;white-space:nowrap;}th,td{border:1px solid #ccc;padding:6px 8px;text-align:center;}th{background:#eee;}td.cell-yellow{background:#ffff00;font-weight:bold;}.btn-del{background:#c62828;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;}</style></head><body><h2>Habesha Database Viewer (${currentCompany} - ${currentTransport})</h2><div class="top-controls"><button type="button" class="btn-back" onclick="goBackToSystem()">⬅️ ተመለስ (Back)</button><input type="text" id="dbSearch" placeholder="🔍 FDC, Plate ወይም Dealer ፈልግ..." onkeyup="filterDatabaseTable()"></div><table id="dbTable"><thead><tr><th>ID</th><th>Company</th><th>Transport</th><th>FDC</th><th>Date</th><th>Plate</th><th>Destin</th><th>Orig</th><th>Dealer</th><th>Product</th><th>Litter</th><th>K/M(paved)</th><th>Rate(B)</th><th>K/M©(gravel)</th><th>Rate(D)</th><th>Trans. Amt</th><th>L/Lit</th><th>Ded. Rate</th><th>Birr</th><th>Net Payment</th><th>ድርጊት</th></tr></thead><tbody id="dbTableBody">`);
         
         function renderDbRows(records) {
             let tbodyHtml = "";
             if (records.length === 0) {
-                tbodyHtml = `<tr><td colspan="14">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`;
+                tbodyHtml = `<tr><td colspan="21">ምንም የተመዘገበ መረጃ አልተገኘም</td></tr>`;
             } else {
                 records.forEach(r => {
-                    tbodyHtml += `<tr id="row-${r.id}"><td>${r.id}</td><td>${r.company}</td><td>${r.transportType}</td><td><b>${r.fdc}</b></td><td>${formatToShortDate(r.date)}</td><td>${r.plate}</td><td>${r.destin}</td><td>${r.orig}</td><td>${r.dealer}</td><td>${r.product}</td><td>${r.litter}</td><td>${r.rate}</td><td><b>${r.transAmt}</b></td><td><button class="btn-del" onclick="deleteRecord(${r.id})">ሰርዝ</button></td></tr>`;
+                    const lit = parseFloat(r.litter) || 0;
+                    const baseRate = parseFloat(r.rate) || 0;
+                    const fallbackTrans = lit * baseRate;
+                    const transAmt = (r.transAmt !== undefined && r.transAmt !== null && r.transAmt !== "") ? (parseFloat(r.transAmt) || 0) : fallbackTrans;
+                    const kmPaved = (r.kmPaved !== undefined && r.kmPaved !== null && r.kmPaved !== "") ? r.kmPaved : (baseRate ? baseRate : "");
+                    const rateB = (r.rateB !== undefined && r.rateB !== null && r.rateB !== "") ? r.rateB : (baseRate || "");
+                    const kmGravel = (r.kmGravel !== undefined && r.kmGravel !== null && r.kmGravel !== "") ? r.kmGravel : "";
+                    const rateD = (r.rateD !== undefined && r.rateD !== null && r.rateD !== "") ? r.rateD : "";
+                    const lLit = (r.lLit !== undefined && r.lLit !== null && r.lLit !== "") ? r.lLit : "";
+                    const dedRate = (r.dedRate !== undefined && r.dedRate !== null && r.dedRate !== "") ? r.dedRate : "";
+                    const birrAmt = (r.birr !== undefined && r.birr !== null && r.birr !== "") ? (parseFloat(r.birr) || 0) : ((parseFloat(lLit) || 0) * (parseFloat(dedRate) || 0));
+                    const netPay = (r.netPayment !== undefined && r.netPayment !== null && r.netPayment !== "") ? (parseFloat(r.netPayment) || 0) : (transAmt - birrAmt);
+
+                    tbodyHtml += `<tr id="row-${r.id}">
+                        <td>${r.id}</td>
+                        <td>${r.company}</td>
+                        <td>${r.transportType}</td>
+                        <td><b>${r.fdc}</b></td>
+                        <td>${formatToShortDate(r.date)}</td>
+                        <td>${r.plate}</td>
+                        <td>${r.destin}</td>
+                        <td>${r.orig}</td>
+                        <td>${r.dealer}</td>
+                        <td>${r.product}</td>
+                        <td>${lit ? lit.toLocaleString() : r.litter}</td>
+                        <td>${kmPaved}</td>
+                        <td>${rateB}</td>
+                        <td>${kmGravel}</td>
+                        <td>${rateD}</td>
+                        <td class="cell-yellow">${fmtNum(transAmt) || '0.00'}</td>
+                        <td>${lLit}</td>
+                        <td>${dedRate}</td>
+                        <td>${fmtNum(birrAmt) || '-'}</td>
+                        <td><b>${fmtNum(netPay) || '0.00'}</b></td>
+                        <td><button class="btn-del" onclick="deleteRecord(${r.id})">ሰርዝ</button></td>
+                    </tr>`;
                 });
             }
             return tbodyHtml;
