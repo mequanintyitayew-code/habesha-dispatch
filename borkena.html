@@ -180,7 +180,7 @@
                 </div>
                 <div class="form-group">
                     <label>Rate(B)</label>
-                    <input type="text" id="rateB" value="1.04682" placeholder="1.04682" oninput="validateNumbersOnly(this, 'rateBError'); calcAmt();">
+                    <input type="text" id="rateB" value="0.91768" placeholder="0.91768" oninput="validateNumbersOnly(this, 'rateBError'); calcAmt();">
                     <span id="rateBError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -190,7 +190,7 @@
                 </div>
                 <div class="form-group">
                     <label>Rate(D)</label>
-                    <input type="text" id="rateD" value="1.23519" placeholder="1.23519" oninput="validateNumbersOnly(this, 'rateDError'); calcAmt();">
+                    <input type="text" id="rateD" value="1.04134" placeholder="1.04134" oninput="validateNumbersOnly(this, 'rateDError'); calcAmt();">
                     <span id="rateDError" class="error-msg">⚠️ Invalid! (ቁጥር ብቻ)</span>
                 </div>
                 <div class="form-group">
@@ -317,8 +317,10 @@
 <script>
     const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const DEFAULT_ORIG = "Djibouti";
-    const DEFAULT_RATE_B = "1.04682";
-    const DEFAULT_RATE_D = "1.23519";
+    const DEFAULT_RATE_B = "0.91768";
+    const DEFAULT_RATE_D = "1.04134";
+    const SPECIAL_RATE_B = "1.04682";
+    const SPECIAL_RATE_D = "1.23519";
     const PASS_STORAGE_KEY = "borkena_custom_passwords_v1";
 
     function loadCustomPasswords() {
@@ -445,7 +447,7 @@
         { station: "DEJEN", dealer: "Getinet", paved: 1160, gravel: 0 },
         { station: "DEJEN", dealer: "Yenus", paved: 1160, gravel: 0 },
         { station: "DENBECHA", dealer: "Sintayehu", paved: 1141, gravel: 0 },
-        { station: "DI YUAN CERAMIC", dealer: "Diayuan", paved: 890, gravel: 0, dedRate: 249.61 },
+        { station: "DI YUAN CERAMIC", dealer: "Diayuan", paved: 890, gravel: 0, isSpecial: true, dedRate: 249.61 },
         { station: "DIRE DAWA", dealer: "Meseret", paved: 105, gravel: 239 },
         { station: "DONGORA", dealer: "Gulilat", paved: 1101, gravel: 10 },
         { station: "DOYOGENA", dealer: "Melkamu", paved: 1114, gravel: 0 },
@@ -464,7 +466,7 @@
         { station: "HARGELE", dealer: "Wolella", paved: 840, gravel: 427 },
         { station: "HAWASSA", dealer: "Netsanet", paved: 1053, gravel: 0 },
         { station: "HIBIR CONSTRUCTION B/D", dealer: "Hibir", paved: 936, gravel: 0 },
-        { station: "HIBIR WORABE", dealer: "Hibir", paved: 1033, gravel: 20, dedRate: 251.36 },
+        { station: "HIBIR WORABE", dealer: "Hibir", paved: 1033, gravel: 20, isSpecial: true, dedRate: 251.36 },
         { station: "JIGJIGA (SOMALIA POLICE)", dealer: "S.P.R", paved: 256, gravel: 239 },
         { station: "JINKA", dealer: "Ejigu", paved: 1528, gravel: 0 },
         { station: "KESA", dealer: "Tafere", paved: 1060, gravel: 0 },
@@ -484,8 +486,8 @@
         { station: "MIZAN AMAN", dealer: "HIWOT TAMIR", paved: 1456, gravel: 53 },
         { station: "MOLALE CITY", dealer: "NBW", paved: 638, gravel: 154 },
         { station: "MORICHA(SHONDOLO)", dealer: "ABERA", paved: 1070, gravel: 0 },
-        { station: "MUGER CEMENT", dealer: "M/C/Factory", paved: 1015, gravel: 0, dedRateByProduct: { AGO: 250.92, HFO: 168.25, MGR: 250.92 } },
-        { station: "MUGER TATEK", dealer: "M/C/Factory", paved: 947, gravel: 0, dedRate: 250.21 },
+        { station: "MUGER CEMENT", dealer: "M/C/Factory", paved: 1015, gravel: 0, isSpecial: true, dedRateByProduct: { AGO: 250.92, HFO: 168.25, MGR: 250.92 } },
+        { station: "MUGER TATEK", dealer: "M/C/Factory", paved: 947, gravel: 0, isSpecial: true, dedRate: 250.21 },
         { station: "NIFASILK", dealer: "Rahel", paved: 927, gravel: 0 },
         { station: "SERDO", dealer: "Mekuanint", paved: 300, gravel: 0 },
         { station: "SHASHEMENE/HAWASSA", dealer: "Netsanet", paved: 23, gravel: 0 },
@@ -513,9 +515,13 @@
         const q = normalizeStationName(rawDest);
         if (!q || q.length < 2) return null;
 
-        if (q === "worabe" || q.includes("hibir worabe")) {
+        if (q === "worabe" || q.includes("hibir worabe") || q.includes("worabe hibir")) {
             const exactWorabe = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === "hibir worabe");
             if (exactWorabe) return exactWorabe;
+        }
+        if (q.includes("diyuan") || q.includes("di yuan")) {
+            const exactDiyuan = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === "di yuan ceramic");
+            if (exactDiyuan) return exactDiyuan;
         }
 
         let match = STATION_MASTER_DATA.find(item => normalizeStationName(item.station) === q);
@@ -552,15 +558,27 @@
 
     function autoFillByDestination(rawDest) {
         const match = findMatchedStation(rawDest);
-        if (!match) return;
+        if (!match) {
+            document.getElementById('rateB').value = DEFAULT_RATE_B;
+            document.getElementById('rateD').value = DEFAULT_RATE_D;
+            document.getElementById('dedRate').value = "";
+            calcAmt();
+            return;
+        }
 
         if (match.dealer) {
             document.getElementById('dealer').value = match.dealer;
         }
         document.getElementById('kmPaved').value = match.paved ?? 0;
         document.getElementById('kmGravel').value = match.gravel ?? 0;
-        document.getElementById('rateB').value = DEFAULT_RATE_B;
-        document.getElementById('rateD').value = DEFAULT_RATE_D;
+
+        if (match.isSpecial) {
+            document.getElementById('rateB').value = SPECIAL_RATE_B;
+            document.getElementById('rateD').value = SPECIAL_RATE_D;
+        } else {
+            document.getElementById('rateB').value = DEFAULT_RATE_B;
+            document.getElementById('rateD').value = DEFAULT_RATE_D;
+        }
 
         const normSt = normalizeStationName(match.station);
         if (normSt === "muger cement") {
